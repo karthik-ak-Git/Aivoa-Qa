@@ -5,6 +5,7 @@ build/
 .env
 .env.local
 .env.*.local
+backend/.env
 
 # Python
 __pycache__/
@@ -50,6 +51,9 @@ ehthumbs.db
 tmp/
 temp/
 *.tmp
+
+# Prototypes and temporary projects
+frontend_prototype/
 
 # Documentation build
 docs/_build/

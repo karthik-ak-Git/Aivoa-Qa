@@ -10,6 +10,7 @@ interface ComplaintFormProps {
   onAssessRisk: () => void;
   isExtracting: boolean;
   isAssessingRisk: boolean;
+  isBlocked: boolean;
 }
 
 export const ComplaintForm: React.FC<ComplaintFormProps> = ({
@@ -20,6 +21,7 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
   onAssessRisk,
   isExtracting,
   isAssessingRisk,
+  isBlocked,
 }) => {
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-6 md:p-8 space-y-8 relative">
@@ -32,6 +34,19 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
           <h3 className="text-lg font-semibold text-slate-800">AI Copilot Extracting Metadata...</h3>
           <p className="text-sm text-slate-500 max-w-md mt-1">
             Analyzing pharmaceutical batch, customer details, quality issue severity, and regulatory risk parameters.
+          </p>
+        </div>
+      )}
+
+      {/* Block overlay: prevent manual entry before AI extraction */}
+      {isBlocked && (
+        <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[2px] z-10 rounded-xl flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-full mb-3">
+            <Sparkles className="w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800">Awaiting AI Extraction</h3>
+          <p className="text-sm text-slate-500 max-w-md mt-1">
+            Upload a document to extract complaint details. All fields are locked until AI analysis is complete.
           </p>
         </div>
       )}

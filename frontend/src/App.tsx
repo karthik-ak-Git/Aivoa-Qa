@@ -4,7 +4,7 @@ import { ComplaintForm } from './components/ComplaintForm';
 import { CopilotSidebar } from './components/CopilotSidebar';
 import { SavedComplaintsModal } from './components/SavedComplaintsModal';
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { updateField, setFormData, setIsExtracting, setIsAssessingRisk, setNotification, replaceFormData, clearNotification } from './store/formSlice';
+import { updateField, setFormData, setIsAssessingRisk, setNotification, replaceFormData, clearNotification } from './store/formSlice';
 import { setSavedComplaints, addComplaint, updateComplaint, deleteComplaint } from './store/complaintsSlice';
 import { setActiveTab } from './store/uiSlice';
 import { INITIAL_EMPTY_FORM } from './sampleData';
@@ -14,6 +14,7 @@ export default function App() {
   const dispatch = useAppDispatch();
   const formData = useAppSelector((state) => state.form.formData);
   const isExtracting = useAppSelector((state) => state.form.isExtracting);
+  const isBlocked = true;
   const isAssessingRisk = useAppSelector((state) => state.form.isAssessingRisk);
   const notification = useAppSelector((state) => state.form.notification);
   const savedComplaints = useAppSelector((state) => state.complaints.savedComplaints);
@@ -120,46 +121,6 @@ export default function App() {
     }
   };
 
-  const handleExtractText = async (rawText: string) => {
-    dispatch(setIsExtracting(true));
-    try {
-      const res = await fetch('/api/extract-complaint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText }),
-      });
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        throw new Error(result.error || 'AI Extraction failed');
-      }
-
-      const extractedData = result.data;
-      const updates: Partial<ComplaintFormData> = {};
-      const fields: (keyof ComplaintFormData)[] = [
-        'complaintSource', 'customerName', 'productName', 'productStrength',
-        'batchNumber', 'manufacturingDate', 'expiryDate', 'quantityAffected',
-        'complaintType', 'complaintDate', 'detailedDescription',
-        'suggestedSeverity', 'suggestedNextAction', 'riskAssessment',
-      ];
-      fields.forEach((field) => {
-        if (extractedData[field]) {
-          (updates as any)[field] = extractedData[field];
-        }
-      });
-      if (extractedData.quantityUnit) {
-        updates.quantityUnit = extractedData.quantityUnit;
-      }
-
-      dispatch(setFormData(updates));
-      showNotification('Metadata successfully extracted into form!', 'success');
-    } catch (err: any) {
-      console.error('Extraction error:', err);
-      showNotification(`AI extraction failed: ${err.message}`, 'error');
-    } finally {
-      dispatch(setIsExtracting(false));
-    }
-  };
-
   const handleDeleteComplaint = (id: string) => {
     dispatch(deleteComplaint(id));
     localStorage.setItem('pharma_complaints_v1', JSON.stringify(
@@ -209,26 +170,27 @@ export default function App() {
             onBackToForm={() => dispatch(setActiveTab('form'))}
           />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left 7 Columns: Form */}
-            <div className="lg:col-span-7">
-              <ComplaintForm
-                formData={formData}
-                onChange={handleFieldChange}
-                onReset={handleResetForm}
-                onSave={handleSaveComplaint}
-                onAssessRisk={handleAssessRisk}
-                isExtracting={isExtracting}
-                isAssessingRisk={isAssessingRisk}
-              />
+          <div className="flex flex-col lg:flex-row gap-6 items-start">
+            {/* Left 7 Columns: Form (scrollable) */}
+            <div className="w-full lg:w-7/12 lg:max-w-[58%] flex-1 min-w-0">
+              <div className="h-[calc(100vh-8rem)] overflow-y-auto pr-2 lg:pr-4">
+                <ComplaintForm
+                  formData={formData}
+                  onChange={handleFieldChange}
+                  onReset={handleResetForm}
+                  onSave={handleSaveComplaint}
+                  onAssessRisk={handleAssessRisk}
+                  isExtracting={isExtracting}
+                  isAssessingRisk={isAssessingRisk}
+                  isBlocked={isBlocked}
+                />
+              </div>
             </div>
 
-            {/* Right 5 Columns: AI Copilot Sidebar */}
-            <div className="lg:col-span-5">
+            {/* Right 5 Columns: AI Copilot Sidebar (sticky) */}
+            <div className="w-full lg:w-5/12 lg:max-w-[42%] shrink-0">
               <CopilotSidebar
                 currentForm={formData}
-                onExtractText={handleExtractText}
-                isExtracting={isExtracting}
               />
             </div>
           </div>
