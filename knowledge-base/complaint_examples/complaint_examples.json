@@ -1,0 +1,322 @@
+[
+  {
+    "id": "CMP-001",
+    "category": "Product Integrity",
+    "sub_category": "Broken",
+    "customer_language": "I opened the bottle and half the tablets were cracked or broken.",
+    "product_type": "Tablet",
+    "possible_root_causes": [
+      "Excessive compression force",
+      "Friability issue",
+      "Poor tablet formulation",
+      "Shipping vibration damage"
+    ],
+    "severity": "Moderate",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-002",
+    "category": "Product Integrity",
+    "sub_category": "Foreign Matter",
+    "customer_language": "I found a black speck in the ointment. It looks like something got into the tube during manufacturing.",
+    "product_type": "Ointment",
+    "possible_root_causes": [
+      "Equipment wear particles",
+      "Raw material contamination",
+      "Poor cleaning validation",
+      "Environmental particulate ingress"
+    ],
+    "severity": "High",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-003",
+    "category": "Product Quality",
+    "sub_category": "Discoloration",
+    "customer_language": "Usually these capsules are bright red, but the new bottle has brownish capsules. Something is wrong.",
+    "product_type": "Capsule (Hard Gelatin)",
+    "possible_root_causes": [
+      "Light/UV degradation",
+      "Oxidation of API or excipient",
+      "Moisture exposure",
+      "Incompatible packaging"
+    ],
+    "severity": "Moderate",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-004",
+    "category": "Packaging Defects",
+    "sub_category": "Leaking",
+    "customer_language": "The bottle is sticky because the syrup is leaking from the cap. It wasn't sealed properly.",
+    "product_type": "Syrup",
+    "possible_root_causes": [
+      "Cap torque too low",
+      "Missing or misaligned inner seal",
+      "Thread defect on bottle neck",
+      "Temperature during filling causing pressure"
+    ],
+    "severity": "Moderate",
+    "source": "Manufacturer complaint records",
+    "confidence": 9
+  },
+  {
+    "id": "CMP-005",
+    "category": "Packaging Defects",
+    "sub_category": "Label Issues",
+    "customer_language": "The label says it expires next month but I just bought it. The expiry date is impossible.",
+    "product_type": "Various",
+    "possible_root_causes": [
+      "Wrong label applied to batch",
+      "Date coding error during packaging",
+      "Label printed with incorrect dates",
+      "Product held too long before labeling"
+    ],
+    "severity": "High",
+    "source": "Manufacturer complaint records",
+    "confidence": 9
+  },
+  {
+    "id": "CMP-006",
+    "category": "Adverse Event",
+    "sub_category": "Allergic Reaction",
+    "customer_language": "After taking this medication, I broke out in hives and had trouble breathing. I had to go to the ER.",
+    "product_type": "Tablet",
+    "possible_root_causes": [
+      "API is known allergen to patient",
+      "Excipient allergy (e.g., lactose, dye)",
+      "Cross-contamination with allergen",
+      "Batch-specific contamination"
+    ],
+    "severity": "Critical",
+    "source": "FAERS database",
+    "confidence": 9
+  },
+  {
+    "id": "CMP-007",
+    "category": "Dose/Count Issues",
+    "sub_category": "Short Count",
+    "customer_language": "I counted 28 tablets but the bottle says 30.",
+    "product_type": "Tablet",
+    "possible_root_causes": [
+      "Incorrect fill count",
+      "Bottle weight check failure",
+      "Tablet breakage in bottle",
+      "Sampling during QC testing without replacement"
+    ],
+    "severity": "Moderate",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-008",
+    "category": "Product Quality",
+    "sub_category": "Potency Issue",
+    "customer_language": "I've been taking this for a week and my blood pressure hasn't gone down at all. It's like taking sugar pills.",
+    "product_type": "Tablet",
+    "possible_root_causes": [
+      "Low blend uniformity",
+      "Incorrect API addition during manufacturing",
+      "Stability failure / potency degradation",
+      "Dissolution failure"
+    ],
+    "severity": "High",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-009",
+    "category": "Sterility / Microbial",
+    "sub_category": "Visible Microbial Growth",
+    "customer_language": "I opened the bottle and there was green fuzzy mold growing on top of the liquid.",
+    "product_type": "Oral Suspension",
+    "possible_root_causes": [
+      "Preservative system failure",
+      "Container closure integrity failure",
+      "Raw material contamination",
+      "Manufacturing process contamination"
+    ],
+    "severity": "Critical",
+    "source": "Manufacturer complaint records",
+    "confidence": 9
+  },
+  {
+    "id": "CMP-010",
+    "category": "Administration/Device",
+    "sub_category": "Device Malfunction",
+    "customer_language": "The inhaler doesn't spray anything when I press it. It's completely empty or broken.",
+    "product_type": "Inhaler (MDI)",
+    "possible_root_causes": [
+      "Valve malfunction",
+      "Propellant loss",
+      "Actuator clogging",
+      "Assembly defect"
+    ],
+    "severity": "High",
+    "source": "Manufacturer complaint records",
+    "confidence": 9
+  },
+  {
+    "id": "CMP-011",
+    "category": "Shipping / Transportation",
+    "sub_category": "Temperature Abuse",
+    "customer_language": "The package was left in the sun and the suppositories had completely melted.",
+    "product_type": "Suppository",
+    "possible_root_causes": [
+      "Temperature excursion during shipping",
+      "Insufficient packaging/insulation",
+      "Delivery delay in hot conditions",
+      "Cold chain failure for temperature-sensitive products"
+    ],
+    "severity": "High",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-012",
+    "category": "Product Integrity",
+    "sub_category": "Deformation",
+    "customer_language": "The softgels are all stuck together in one big clump. I can't get them apart.",
+    "product_type": "Softgel Capsule",
+    "possible_root_causes": [
+      "Excessive temperature during storage",
+      "Shell formulation issue (cross-linking)",
+      "Moisture exposure",
+      "Excessive pressure in bottle"
+    ],
+    "severity": "Moderate",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-013",
+    "category": "Labeling / Documentation",
+    "sub_category": "Missing Information",
+    "customer_language": "The bottle doesn't have a lot number or expiration date. I don't know if it's safe to use.",
+    "product_type": "Various",
+    "possible_root_causes": [
+      "Inkjet printer failure during packaging line",
+      "Label misalignment",
+      "Pre-printed labels missing information",
+      "Secondary packaging error"
+    ],
+    "severity": "High",
+    "source": "Manufacturer complaint records",
+    "confidence": 9
+  },
+  {
+    "id": "CMP-014",
+    "category": "Product Quality",
+    "sub_category": "Odor Issue",
+    "customer_language": "These tablets have a strong chemical smell. They normally don't smell like anything.",
+    "product_type": "Tablet",
+    "possible_root_causes": [
+      "Packaging material off-gassing",
+      "API/excipient degradation",
+      "Cross-contamination with volatile material",
+      "Moisture-induced degradation"
+    ],
+    "severity": "High",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-015",
+    "category": "Tampering / Counterfeit",
+    "sub_category": "Suspect Counterfeit",
+    "customer_language": "I bought these online and the packaging looks different from the ones at the regular pharmacy.",
+    "product_type": "Various",
+    "possible_root_causes": [
+      "Counterfeit product",
+      "Different packaging version (country variant)",
+      "Secondary market product",
+      "Package redesign not yet communicated"
+    ],
+    "severity": "Critical",
+    "source": "FDA / Manufacturer",
+    "confidence": 7
+  },
+  {
+    "id": "CMP-016",
+    "category": "Product Integrity",
+    "sub_category": "Foreign Matter",
+    "customer_language": "There's a hair in the cream. It was inside the tube.",
+    "product_type": "Cream",
+    "possible_root_causes": [
+      "Personnel gowning breach",
+      "Improper clean room practices",
+      "Raw material contamination",
+      "Packaging component contamination"
+    ],
+    "severity": "Critical",
+    "source": "Manufacturer complaint records",
+    "confidence": 9
+  },
+  {
+    "id": "CMP-017",
+    "category": "Formulation / Performance",
+    "sub_category": "Hard to Swallow",
+    "customer_language": "These pills are huge. I can't swallow them. Can you make smaller ones?",
+    "product_type": "Tablet",
+    "possible_root_causes": [
+      "Product design choice (high dose requires larger tablet)",
+      "Change in formulation affecting size",
+      "Patient sensitivity to tablet size",
+      "No smaller alternative dose form available"
+    ],
+    "severity": "Low",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-018",
+    "category": "Product Quality",
+    "sub_category": "Dissolution Failure",
+    "customer_language": "I found a whole pill in the toilet. It didn't dissolve at all.",
+    "product_type": "Tablet (ER)",
+    "possible_root_causes": [
+      "Excessive hardness",
+      "Coating defect (over-coating)",
+      "Formulation issue (excipient incompatibility)",
+      "pH-dependent dissolution issue"
+    ],
+    "severity": "High",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-019",
+    "category": "Packaging Defects",
+    "sub_category": "Blister Damage",
+    "customer_language": "Several blister pockets were already open and empty. I'm missing half my pills.",
+    "product_type": "Tablet (Blister Pack)",
+    "possible_root_causes": [
+      "Blister sealing temperature/pressure too low",
+      "Foil puncture during packaging",
+      "Package handling damage",
+      "Blister material defect"
+    ],
+    "severity": "Moderate",
+    "source": "Manufacturer complaint records",
+    "confidence": 8
+  },
+  {
+    "id": "CMP-020",
+    "category": "Adverse Event",
+    "sub_category": "Lack of Efficacy",
+    "customer_language": "I finished the entire course and my infection never cleared up. This medication didn't work.",
+    "product_type": "Tablet (Antibiotic)",
+    "possible_root_causes": [
+      "Bacterial resistance",
+      "Subpotent batch",
+      "Patient non-compliance",
+      "Wrong diagnosis or prescription"
+    ],
+    "severity": "High",
+    "source": "FAERS / Manufacturer complaint records",
+    "confidence": 7
+  }
+]

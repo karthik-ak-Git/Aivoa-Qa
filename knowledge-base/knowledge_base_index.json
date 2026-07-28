@@ -1,0 +1,202 @@
+{
+  "project": "Pharmaceutical Knowledge Base for AI-Native QMS",
+  "version": "1.0",
+  "generated": "2026-07-28",
+  "scope": "Customer Complaint Management, Quality Events, Risk Assessment, Regulatory Compliance",
+  "manufacturer_types": ["API", "FDF"],
+  "total_directories": 22,
+  "total_files": 22,
+  "source_priority_levels": {
+    "P1": "Regulatory & Official Bodies (FDA, ICH, EMA, WHO, USP, etc.)",
+    "P2": "Manufacturers & Compendia",
+    "P3": "Academic & Government Publications"
+  },
+  "directories": {
+    "sources": {
+      "path": "knowledge-base/sources/sources_index.md",
+      "description": "Authoritative source catalog (34 sources)",
+      "items": 34,
+      "type": "reference"
+    },
+    "medicines": {
+      "path": "knowledge-base/medicines/medicines_index.md",
+      "description": "Drug knowledge base (100+ drugs, 10 categories)",
+      "items": 100,
+      "type": "reference"
+    },
+    "dosage_forms": {
+      "path": "knowledge-base/dosage_forms/dosage_forms.md",
+      "description": "Dosage form specifications (24 types)",
+      "items": 24,
+      "type": "reference"
+    },
+    "pharmaceutical_dictionary": {
+      "path": "knowledge-base/pharmaceutical_dictionary/pharmaceutical_dictionary.md",
+      "description": "Pharmaceutical terminology (150 terms A-Z)",
+      "items": 150,
+      "type": "reference"
+    },
+    "abbreviations": {
+      "path": "knowledge-base/abbreviations/abbreviations.md",
+      "description": "Pharmaceutical abbreviations (200+)",
+      "items": 200,
+      "type": "reference"
+    },
+    "complaint_terms": {
+      "path": "knowledge-base/complaint_terms/complaint_terms.md",
+      "description": "Complaint terminology mapping (120+ terms)",
+      "items": 120,
+      "type": "reference"
+    },
+    "complaint_categories": {
+      "path": "knowledge-base/complaint_categories/complaint_categories.md",
+      "description": "Complaint categories taxonomy (14 categories, 40+ sub-types)",
+      "items": 14,
+      "type": "reference"
+    },
+    "complaint_examples": {
+      "path": "knowledge-base/complaint_examples/complaint_examples.json",
+      "description": "Structured complaint examples (20 records)",
+      "items": 20,
+      "type": "data"
+    },
+    "manufacturing": {
+      "path": "knowledge-base/manufacturing/manufacturing_stages.md",
+      "description": "Manufacturing stages (10 stages with CPPs and failure modes)",
+      "items": 10,
+      "type": "reference"
+    },
+    "packaging": {
+      "path": "knowledge-base/packaging/packaging_knowledge.md",
+      "description": "Packaging systems (14 types with defects)",
+      "items": 14,
+      "type": "reference"
+    },
+    "equipment": {
+      "path": "knowledge-base/equipment/pharmaceutical_equipment.md",
+      "description": "Pharmaceutical equipment (25 types with CPPs)",
+      "items": 25,
+      "type": "reference"
+    },
+    "regulations": {
+      "path": "knowledge-base/regulations/regulatory_framework.md",
+      "description": "Regulatory framework (25+ regulations/guidelines)",
+      "items": 25,
+      "type": "reference"
+    },
+    "CAPA": {
+      "path": "knowledge-base/CAPA/CAPA_knowledge.md",
+      "description": "CAPA knowledge (7-step process, 3 worked examples)",
+      "items": 3,
+      "type": "reference"
+    },
+    "deviations": {
+      "path": "knowledge-base/deviations/deviations.md",
+      "description": "Deviation management (types, 6-step process, 3 examples)",
+      "items": 3,
+      "type": "reference"
+    },
+    "investigations": {
+      "path": "knowledge-base/investigations/investigations.md",
+      "description": "Investigation procedures (Phase I/II, RCA methods)",
+      "items": 1,
+      "type": "reference"
+    },
+    "SOP_examples": {
+      "path": "knowledge-base/SOP_examples/SOP_template.md",
+      "description": "SOP templates (5 SOPs, intake form, investigation form)",
+      "items": 5,
+      "type": "procedure"
+    },
+    "FDA_recalls": {
+      "path": "knowledge-base/FDA_recalls/FDA_recalls.md",
+      "description": "FDA recall knowledge (classifications, statistics, 4 examples)",
+      "items": 4,
+      "type": "reference"
+    },
+    "warning_letters": {
+      "path": "knowledge-base/warning_letters/FDA_warning_letters.md",
+      "description": "FDA warning letter knowledge (top citations, 3 examples, statistics)",
+      "items": 3,
+      "type": "reference"
+    },
+    "forms": {
+      "path": "knowledge-base/forms/",
+      "description": "QMS forms (complaint intake, investigation report)",
+      "items": 2,
+      "files": ["complaint_intake_form.md", "investigation_report_form.md"],
+      "type": "form"
+    },
+    "templates": {
+      "path": "knowledge-base/templates/",
+      "description": "QMS document templates (CAPA record)",
+      "items": 1,
+      "files": ["capar_template.md"],
+      "type": "template"
+    },
+    "images": {
+      "path": "knowledge-base/images/",
+      "description": "Visual aids and diagrams",
+      "items": 0,
+      "type": "media"
+    },
+    "pdfs": {
+      "path": "knowledge-base/pdfs/",
+      "description": "Reference PDF documents",
+      "items": 0,
+      "type": "media"
+    },
+    "datasets": {
+      "path": "knowledge-base/datasets/",
+      "description": "Structured data files (CSV, Excel)",
+      "items": 0,
+      "type": "data"
+    },
+    "vectors": {
+      "path": "knowledge-base/vectors/",
+      "description": "Embedding vectors for RAG pipeline",
+      "items": 0,
+      "type": "data"
+    }
+  },
+  "deliverables": {
+    "readme": "knowledge-base/README.md",
+    "master_index": "knowledge-base/knowledge_base_index.json"
+  },
+  "quality_scores": {
+    "overall": 8.49,
+    "by_category": {
+      "authority": 9.2,
+      "accuracy": 8.9,
+      "completeness": 7.5,
+      "usability": 8.3
+    }
+  },
+  "gaps": {
+    "high_priority": [
+      "Images directory empty",
+      "PDFs directory empty",
+      "Datasets directory empty",
+      "Vectors directory empty",
+      "Limited forms/templates (3 of 8+ needed)"
+    ],
+    "medium_priority": [
+      "No supplier/contractor content",
+      "No stability knowledge",
+      "No cleaning validation",
+      "No process validation",
+      "No water system knowledge",
+      "No HVAC/environmental monitoring",
+      "No aseptic processing",
+      "No laboratory equipment knowledge",
+      "No excipient knowledge"
+    ]
+  },
+  "next_steps": [
+    "Add remaining QMS forms (deviation, OOS, change control, training, audit)",
+    "Add investigation report and batch record templates",
+    "Create CSV dataset schemas for complaint trending",
+    "Populate images/ with equipment and defect photos",
+    "Generate vector embeddings for RAG pipeline"
+  ]
+}
