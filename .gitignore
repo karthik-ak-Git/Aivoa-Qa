@@ -17,6 +17,9 @@ venv/
 .venv/
 env/
 
+# ChromaDB local data
+backend/data/
+
 # IDE
 .vscode/
 .idea/
