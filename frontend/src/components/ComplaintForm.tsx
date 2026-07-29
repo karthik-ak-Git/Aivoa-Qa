@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Calendar, Shield, RotateCcw, Save, Sparkles } from 'lucide-react';
+import { Calendar, Shield, RotateCcw, Save } from 'lucide-react';
 import { ComplaintFormData } from '../types';
 
 interface ComplaintFormProps {
@@ -7,8 +7,6 @@ interface ComplaintFormProps {
   onChange: (field: keyof ComplaintFormData, value: string) => void;
   onReset: () => void;
   onSave: () => void;
-  onAssessRisk: () => void;
-  isAssessingRisk: boolean;
   highlightedFields: string[];
   onClearHighlights: () => void;
 }
@@ -21,8 +19,6 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
   onChange,
   onReset,
   onSave,
-  onAssessRisk,
-  isAssessingRisk,
   highlightedFields,
   onClearHighlights,
 }) => {
@@ -244,20 +240,9 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
         </h3>
 
         <div className="bg-blue-50/40 border border-blue-100 rounded-xl p-5 space-y-4 relative">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-blue-700 font-semibold text-xs md:text-sm">
-              <Shield className="w-4 h-4 text-blue-600" />
-              <span>AI copilot risk assessment</span>
-            </div>
-            <button
-              type="button"
-              onClick={onAssessRisk}
-              disabled={isAssessingRisk}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 hover:underline disabled:opacity-50"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              {isAssessingRisk ? 'Re-evaluating...' : 'Re-assess Risk'}
-            </button>
+          <div className="flex items-center gap-2 text-blue-700 font-semibold text-xs md:text-sm">
+            <Shield className="w-4 h-4 text-blue-600" />
+            <span>AI copilot risk assessment</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

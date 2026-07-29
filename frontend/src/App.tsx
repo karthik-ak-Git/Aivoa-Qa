@@ -14,7 +14,6 @@ import * as api from './services/api';
 export default function App() {
   const dispatch = useAppDispatch();
   const formData = useAppSelector((state) => state.form.formData);
-  const isAssessingRisk = useAppSelector((state) => state.form.isAssessingRisk);
   const notification = useAppSelector((state) => state.form.notification);
   const highlightedFields = useAppSelector((state) => state.form.highlightedFields);
   const savedComplaints = useAppSelector((state) => state.complaints.savedComplaints);
@@ -157,8 +156,6 @@ export default function App() {
                   onChange={handleFieldChange}
                   onReset={handleResetForm}
                   onSave={handleSaveComplaint}
-                  onAssessRisk={() => {}}
-                  isAssessingRisk={isAssessingRisk}
                   highlightedFields={highlightedFields}
                   onClearHighlights={() => dispatch(clearHighlightedFields())}
                 />
