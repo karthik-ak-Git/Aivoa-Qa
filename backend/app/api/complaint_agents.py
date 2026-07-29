@@ -126,7 +126,16 @@ async def extract_from_text(req: ExtractTextRequest):
     )
 
 
-@router.post("/chat")
-async def legacy_chat(req: WriteRequest):
+class LegacyChatRequest(BaseModel):
+    message: str = Field(..., description="User message (backward compat)")
+    query: str | None = Field(None, description="Alternative query field")
+    conversation_id: str | None = None
+    complaint_id: str | None = None
+    user_id: str | None = None
+
+
+@router.post("/chat", response_model=CopilotResponse)
+async def legacy_chat(req: LegacyChatRequest):
     """Backward-compatible chat endpoint — routes to writer agent."""
-    return await write_complaint(req)
+    query = req.query or req.message
+    return await write_complaint(WriteRequest(query=query))

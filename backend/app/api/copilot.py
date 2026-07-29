@@ -23,9 +23,9 @@ def get_conversation_service() -> ConversationService:
 
 
 @router.post(
-    "/chat",
+    "/ask",
     response_model=CopilotResponse,
-    summary="Chat with the AI Copilot",
+    summary="Legacy copilot ask (root cause / CAPA / regulatory)",
     description=(
         "Send a message to the Pharmaceutical AI Copilot. "
         "The copilot analyzes the message, retrieves relevant knowledge, "

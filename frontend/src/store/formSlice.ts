@@ -3,9 +3,9 @@ import { ComplaintFormData } from '../types';
 
 interface FormState {
   formData: ComplaintFormData;
-  isExtracting: boolean;
   isAssessingRisk: boolean;
   notification: { type: 'success' | 'info' | 'error'; message: string } | null;
+  highlightedFields: string[];
 }
 
 const initialState: FormState = {
@@ -27,9 +27,9 @@ const initialState: FormState = {
     suggestedNextAction: '',
     riskAssessment: '',
   },
-  isExtracting: false,
   isAssessingRisk: false,
   notification: null,
+  highlightedFields: [],
 };
 
 const formSlice = createSlice({
@@ -40,16 +40,20 @@ const formSlice = createSlice({
       state.formData = { ...state.formData, ...action.payload };
     },
     replaceFormData: (state, action: PayloadAction<ComplaintFormData>) => {
+      const changed: string[] = [];
+      for (const key of Object.keys(action.payload) as (keyof ComplaintFormData)[]) {
+        if (action.payload[key] !== state.formData[key]) {
+          changed.push(key);
+        }
+      }
       state.formData = action.payload;
+      state.highlightedFields = changed;
     },
     updateField: (state, action: PayloadAction<{ field: keyof ComplaintFormData; value: string }>) => {
       (state.formData as any)[action.payload.field] = action.payload.value;
     },
     setStatus: (state, action: PayloadAction<'Pending Triage' | 'Under QA Investigation' | 'CAPA Initiated' | 'Closed'>) => {
       state.formData.status = action.payload;
-    },
-    setIsExtracting: (state, action: PayloadAction<boolean>) => {
-      state.isExtracting = action.payload;
     },
     setIsAssessingRisk: (state, action: PayloadAction<boolean>) => {
       state.isAssessingRisk = action.payload;
@@ -59,6 +63,9 @@ const formSlice = createSlice({
     },
     clearNotification: (state) => {
       state.notification = null;
+    },
+    clearHighlightedFields: (state) => {
+      state.highlightedFields = [];
     },
     resetForm: (state, action: PayloadAction<ComplaintFormData>) => {
       state.formData = action.payload;
@@ -71,10 +78,10 @@ export const {
   replaceFormData,
   updateField,
   setStatus,
-  setIsExtracting,
   setIsAssessingRisk,
   setNotification,
   clearNotification,
+  clearHighlightedFields,
   resetForm,
 } = formSlice.actions;
 

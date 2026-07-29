@@ -5,9 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.config import get_settings
 from app.core.logger import setup_logging, get_logger
-from app.api.copilot import router as copilot_router
-from app.api.copilot_sub import router as copilot_sub_router
-from app.api.complaint_agents import router as agents_router, set_workflow
+from app.api.complaint_agents import router as agents_router
 from app.api.health import router as health_router
 from app.api.complaints import router as complaints_router
 
@@ -55,13 +53,6 @@ async def lifespan(app: FastAPI):
         from app.services.openrouter_service import get_openrouter_service
         from app.services.conversation_service import ConversationService
         from app.services.validation_service import ResponseValidationService
-        from app.agents.medicine_agent import MedicineAgent
-        from app.agents.complaint_agent import ComplaintAgent
-        from app.agents.root_cause_agent import RootCauseAgent
-        from app.agents.capa_agent import CAPAAgent
-        from app.agents.regulatory_agent import RegulatoryAgent
-        from app.agents.summary_agent import SummaryAgent
-        from app.graph.workflow import CopilotWorkflow
 
         # Load knowledge base
         logger.info("Loading knowledge base...")
@@ -99,43 +90,12 @@ async def lifespan(app: FastAPI):
         app_state["conversation_service"] = conversation_service
         app_state["validation_service"] = validation_service
 
-        # Initialize agents
-        logger.info("Initializing AI agents...")
-        medicine_agent = MedicineAgent(llm_service, retrieval_service)
-        complaint_agent = ComplaintAgent(llm_service, retrieval_service)
-        root_cause_agent = RootCauseAgent(llm_service, retrieval_service)
-        capa_agent = CAPAAgent(llm_service, retrieval_service)
-        regulatory_agent = RegulatoryAgent(llm_service, retrieval_service)
-        summary_agent = SummaryAgent(llm_service, retrieval_service)
-
-        app_state["agents"] = {
-            "medicine": medicine_agent,
-            "complaint": complaint_agent,
-            "root_cause": root_cause_agent,
-            "capa": capa_agent,
-            "regulatory": regulatory_agent,
-            "summary": summary_agent,
-        }
-
-        # Initialize LangGraph workflow
-        logger.info("Building LangGraph workflow...")
-        workflow = CopilotWorkflow(
-            medicine_agent=medicine_agent,
-            complaint_agent=complaint_agent,
-            root_cause_agent=root_cause_agent,
-            capa_agent=capa_agent,
-            regulatory_agent=regulatory_agent,
-            summary_agent=summary_agent,
-            validation_service=validation_service,
-            retrieval_service=retrieval_service,
-        )
-        app_state["workflow"] = workflow
-
         # Initialize new complaint agents (Writer, Editor, OCR)
         logger.info("Initializing Complaint Agents (Writer + Editor + OCR)...")
         groq_service = get_groq_service()
         complaint_workflow = ComplaintWorkflow(groq=groq_service, retrieval=retrieval_service)
         app_state["complaint_workflow"] = complaint_workflow
+        from app.api.complaint_agents import set_workflow
         set_workflow(complaint_workflow)
         logger.info("Complaint agents ready: Writer (gemma2-9b-it), Editor (gemma2-9b-it), OCR (gemma2-9b-it)")
 
@@ -178,8 +138,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(copilot_router)
-app.include_router(copilot_sub_router)
 app.include_router(agents_router)
 app.include_router(health_router)
 app.include_router(complaints_router)

@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { Header } from './components/Header';
 import { ComplaintForm } from './components/ComplaintForm';
-import { CopilotSidebar } from './components/CopilotSidebar';
+import { CopilotChat } from './components/CopilotChat';
 import { SavedComplaintsModal } from './components/SavedComplaintsModal';
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { updateField, setFormData, setIsAssessingRisk, setNotification, replaceFormData, clearNotification } from './store/formSlice';
+import { updateField, setNotification, replaceFormData, clearNotification, clearHighlightedFields } from './store/formSlice';
 import { setSavedComplaints, addComplaint, updateComplaint, deleteComplaint } from './store/complaintsSlice';
 import { setActiveTab } from './store/uiSlice';
 import { INITIAL_EMPTY_FORM } from './sampleData';
@@ -14,21 +14,18 @@ import * as api from './services/api';
 export default function App() {
   const dispatch = useAppDispatch();
   const formData = useAppSelector((state) => state.form.formData);
-  const isExtracting = useAppSelector((state) => state.form.isExtracting);
-  const isBlocked = isExtracting;
   const isAssessingRisk = useAppSelector((state) => state.form.isAssessingRisk);
   const notification = useAppSelector((state) => state.form.notification);
+  const highlightedFields = useAppSelector((state) => state.form.highlightedFields);
   const savedComplaints = useAppSelector((state) => state.complaints.savedComplaints);
   const activeTab = useAppSelector((state) => state.ui.activeTab);
 
-  // Load complaints from backend on mount
   useEffect(() => {
     api.fetchComplaints()
       .then((complaints) => {
         if (complaints.length > 0) {
           dispatch(setSavedComplaints(complaints));
         } else {
-          // Seed with sample data on first load
           const sampleRecord: ComplaintFormData = {
             id: 'CMP-2026-0038',
             status: 'Under QA Investigation',
@@ -57,11 +54,10 @@ export default function App() {
         }
       })
       .catch(() => {
-        // Backend offline — fall back to localStorage
         try {
           const stored = localStorage.getItem('pharma_complaints_v1');
           if (stored) dispatch(setSavedComplaints(JSON.parse(stored)));
-        } catch { /* ignore */ }
+        } catch { }
       });
   }, [dispatch]);
 
@@ -103,33 +99,6 @@ export default function App() {
     }
   };
 
-  const handleAssessRisk = async () => {
-    dispatch(setIsAssessingRisk(true));
-    try {
-      const res = await fetch('/api/assess-risk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentForm: formData }),
-      });
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        throw new Error(result.error || 'Failed to re-assess risk');
-      }
-
-      dispatch(setFormData({
-        suggestedSeverity: result.data.suggestedSeverity || formData.suggestedSeverity,
-        suggestedNextAction: result.data.suggestedNextAction || formData.suggestedNextAction,
-        riskAssessment: result.data.riskAssessment || formData.riskAssessment,
-      }));
-      showNotification('AI Risk Assessment re-evaluated successfully.', 'success');
-    } catch (err: any) {
-      console.error('Risk assessment error:', err);
-      showNotification(`Risk assessment warning: ${err.message}`, 'error');
-    } finally {
-      dispatch(setIsAssessingRisk(false));
-    }
-  };
-
   const handleDeleteComplaint = async (id: string) => {
     try {
       await api.deleteComplaint(id);
@@ -152,7 +121,6 @@ export default function App() {
         onOpenSavedModal={() => dispatch(setActiveTab('logs'))}
       />
 
-      {/* Floating toast notification */}
       {notification && (
         <div className="fixed bottom-5 right-5 z-50 animate-bounce">
           <div
@@ -169,7 +137,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Content Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
         {activeTab === 'logs' ? (
           <SavedComplaintsModal
@@ -182,28 +149,25 @@ export default function App() {
             onBackToForm={() => dispatch(setActiveTab('form'))}
           />
         ) : (
-          <div className="flex flex-col lg:flex-row gap-6 items-start">
-            {/* Left 7 Columns: Form (scrollable) */}
-            <div className="w-full lg:w-7/12 lg:max-w-[58%] flex-1 min-w-0">
-              <div className="h-[calc(100vh-8rem)] overflow-y-auto pr-2 lg:pr-4">
+          <div className="flex gap-4 lg:gap-6">
+            <div className="flex-1 min-w-0">
+              <div className="h-[calc(100vh-8rem)] overflow-y-auto pr-1 lg:pr-2">
                 <ComplaintForm
                   formData={formData}
                   onChange={handleFieldChange}
                   onReset={handleResetForm}
                   onSave={handleSaveComplaint}
-                  onAssessRisk={handleAssessRisk}
-                  isExtracting={isExtracting}
+                  onAssessRisk={() => {}}
                   isAssessingRisk={isAssessingRisk}
-                  isBlocked={isBlocked}
+                  highlightedFields={highlightedFields}
+                  onClearHighlights={() => dispatch(clearHighlightedFields())}
                 />
               </div>
             </div>
-
-            {/* Right 5 Columns: AI Copilot Sidebar (sticky) */}
-            <div className="w-full lg:w-5/12 lg:max-w-[42%] shrink-0">
-              <CopilotSidebar
-                currentForm={formData}
-              />
+            <div className="w-80 xl:w-96 shrink-0 hidden lg:block">
+              <div className="h-[calc(100vh-8rem)]">
+                <CopilotChat />
+              </div>
             </div>
           </div>
         )}

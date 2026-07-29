@@ -85,18 +85,44 @@ class WriterAgent:
         ]
 
         # Step 3: Generate
-        response = await self.groq.agenerate(messages, temperature=0.3, max_tokens=2048)
+        response = await self.groq.agenerate(messages, temperature=0.3, max_tokens=4096)
 
         # Step 4: Parse
-        try:
-            clean = response.strip()
-            if clean.startswith("```"):
-                clean = clean.split("\n", 1)[1]
-            if clean.endswith("```"):
-                clean = clean.rsplit("```", 1)[0]
-            clean = clean.strip()
-            form_data = json.loads(clean)
-        except (json.JSONDecodeError, IndexError):
+        def extract_json(raw: str) -> dict | None:
+            raw = raw.strip()
+            # Strip markdown fences: ```json ... ``` or ``` ... ```
+            if raw.startswith("```"):
+                for prefix in ("```json\n", "```json\n", "```\n", "```"):
+                    if raw.startswith(prefix):
+                        raw = raw[len(prefix):]
+                        break
+            if raw.endswith("```"):
+                raw = raw[:-3]
+            raw = raw.strip()
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError:
+                # Try to find the JSON object with regex
+                import re
+                match = re.search(r'\{.*"suggestedSeverity"\s*:\s*"[^"]*"[^}]*\}', raw, re.DOTALL)
+                if match:
+                    try:
+                        return json.loads(match.group())
+                    except json.JSONDecodeError:
+                        pass
+                # Last resort: try to find any JSON object
+                brace_start = raw.find('{')
+                brace_end = raw.rfind('}')
+                if brace_start != -1 and brace_end != -1 and brace_end > brace_start:
+                    try:
+                        partial = raw[brace_start:brace_end + 1]
+                        return json.loads(partial)
+                    except json.JSONDecodeError:
+                        pass
+            return None
+
+        form_data = extract_json(response)
+        if form_data is None:
             logger.error(f"Failed to parse writer output: {response[:300]}")
             # Return a minimal valid form
             form_data = {

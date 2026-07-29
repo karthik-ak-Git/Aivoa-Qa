@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Calendar, Shield, RotateCcw, Save, Sparkles } from 'lucide-react';
 import { ComplaintFormData } from '../types';
 
@@ -8,10 +8,13 @@ interface ComplaintFormProps {
   onReset: () => void;
   onSave: () => void;
   onAssessRisk: () => void;
-  isExtracting: boolean;
   isAssessingRisk: boolean;
-  isBlocked: boolean;
+  highlightedFields: string[];
+  onClearHighlights: () => void;
 }
+
+const hl = (field: string, highlightedFields: string[]) =>
+  highlightedFields.includes(field) ? 'animate-highlight ring-2 ring-blue-400/40 border-blue-400' : '';
 
 export const ComplaintForm: React.FC<ComplaintFormProps> = ({
   formData,
@@ -19,37 +22,23 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
   onReset,
   onSave,
   onAssessRisk,
-  isExtracting,
   isAssessingRisk,
-  isBlocked,
+  highlightedFields,
+  onClearHighlights,
 }) => {
+  useEffect(() => {
+    if (highlightedFields.length > 0) {
+      const timer = setTimeout(onClearHighlights, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedFields, onClearHighlights]);
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-6 md:p-8 space-y-8 relative">
-      {/* Top Banner overlay if extracting */}
-      {isExtracting && (
-        <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px] z-10 rounded-xl flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-full mb-3 animate-bounce">
-            <Sparkles className="w-8 h-8" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-800">AI Copilot Extracting Metadata...</h3>
-          <p className="text-sm text-slate-500 max-w-md mt-1">
-            Analyzing pharmaceutical batch, customer details, quality issue severity, and regulatory risk parameters.
-          </p>
-        </div>
-      )}
 
-      {/* Block overlay: prevent manual entry before AI extraction */}
-      {isBlocked && (
-        <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[2px] z-10 rounded-xl flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-full mb-3">
-            <Sparkles className="w-8 h-8" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-800">Awaiting AI Extraction</h3>
-          <p className="text-sm text-slate-500 max-w-md mt-1">
-            Upload a document to extract complaint details. All fields are locked until AI analysis is complete.
-          </p>
-        </div>
-      )}
+      <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-xs text-slate-500 flex items-center gap-2">
+        <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+        <span>Form is managed by <strong className="text-slate-700">AI Copilot</strong> — edit fields via the chat panel on the right.</span>
+      </div>
 
       {/* Title & Status Bar matching Image */}
       <div className="flex items-start justify-between border-b border-slate-100 pb-6">
@@ -77,8 +66,10 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
               type="text"
               value={formData.complaintSource}
               onChange={(e) => onChange('complaintSource', e.target.value)}
-              placeholder="Awaiting AI extraction..."
-              className="w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              placeholder="e.g. Email Intake, Phone Call, Portal"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none ${hl('complaintSource', highlightedFields)}`}
             />
           </div>
 
@@ -88,8 +79,10 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
               type="text"
               value={formData.customerName}
               onChange={(e) => onChange('customerName', e.target.value)}
-              placeholder="Awaiting AI extraction..."
-              className="w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              placeholder="e.g. Apex Pharmaceuticals Distribution GmbH"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none ${hl('customerName', highlightedFields)}`}
             />
           </div>
         </div>
@@ -108,8 +101,10 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
               type="text"
               value={formData.productName}
               onChange={(e) => onChange('productName', e.target.value)}
-              placeholder="Awaiting AI extraction..."
-              className="w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              placeholder="e.g. Amoxicillin Trihydrate 500mg FDF Capsules"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none ${hl('productName', highlightedFields)}`}
             />
           </div>
 
@@ -119,8 +114,10 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
               type="text"
               value={formData.productStrength}
               onChange={(e) => onChange('productStrength', e.target.value)}
-              placeholder="Awaiting AI extraction..."
-              className="w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              placeholder="e.g. 500mg Alu-Alu Blister"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none ${hl('productStrength', highlightedFields)}`}
             />
           </div>
 
@@ -130,8 +127,10 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
               type="text"
               value={formData.batchNumber}
               onChange={(e) => onChange('batchNumber', e.target.value)}
-              placeholder="Awaiting AI extraction..."
-              className="w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all tabular-nums"
+              placeholder="e.g. AMX-2026-094"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none tabular-nums ${hl('batchNumber', highlightedFields)}`}
             />
           </div>
 
@@ -140,10 +139,12 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
             <div className="relative">
               <input
                 type="text"
-                value={formData.manufacturingDate}
-                onChange={(e) => onChange('manufacturingDate', e.target.value)}
-                placeholder="Awaiting AI extraction..."
-                className="w-full text-xs md:text-sm px-3.5 py-2.5 pr-10 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all tabular-nums"
+              value={formData.manufacturingDate}
+              onChange={(e) => onChange('manufacturingDate', e.target.value)}
+              placeholder="e.g. 2026-03-10"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 pr-10 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none tabular-nums ${hl('manufacturingDate', highlightedFields)}`}
               />
               <Calendar className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -154,10 +155,12 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
             <div className="relative">
               <input
                 type="text"
-                value={formData.expiryDate}
-                onChange={(e) => onChange('expiryDate', e.target.value)}
-                placeholder="Awaiting AI extraction..."
-                className="w-full text-xs md:text-sm px-3.5 py-2.5 pr-10 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all tabular-nums"
+              value={formData.expiryDate}
+              onChange={(e) => onChange('expiryDate', e.target.value)}
+              placeholder="e.g. 2028-03-09"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 pr-10 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none tabular-nums ${hl('expiryDate', highlightedFields)}`}
               />
               <Calendar className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -168,10 +171,12 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
             <div className="relative flex items-center">
               <input
                 type="text"
-                value={formData.quantityAffected}
-                onChange={(e) => onChange('quantityAffected', e.target.value)}
-                placeholder="Awaiting AI extraction..."
-                className="w-full text-xs md:text-sm px-3.5 py-2.5 pr-12 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all tabular-nums"
+              value={formData.quantityAffected}
+              onChange={(e) => onChange('quantityAffected', e.target.value)}
+              placeholder="e.g. 240"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 pr-12 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none tabular-nums ${hl('quantityAffected', highlightedFields)}`}
               />
               <span className="absolute right-3.5 text-xs font-medium text-slate-500">
                 {formData.quantityUnit || 'kg'}
@@ -194,8 +199,10 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
               type="text"
               value={formData.complaintType}
               onChange={(e) => onChange('complaintType', e.target.value)}
-              placeholder="Awaiting AI extraction..."
-              className="w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              placeholder="e.g. Discoloration & Blister Seal Defect"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none ${hl('complaintType', highlightedFields)}`}
             />
           </div>
 
@@ -204,10 +211,12 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
             <div className="relative">
               <input
                 type="text"
-                value={formData.complaintDate}
-                onChange={(e) => onChange('complaintDate', e.target.value)}
-                placeholder="Awaiting AI extraction..."
-                className="w-full text-xs md:text-sm px-3.5 py-2.5 pr-10 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all tabular-nums"
+              value={formData.complaintDate}
+              onChange={(e) => onChange('complaintDate', e.target.value)}
+              placeholder="e.g. 2026-07-24"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm px-3.5 py-2.5 pr-10 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none tabular-nums ${hl('complaintDate', highlightedFields)}`}
               />
               <Calendar className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -220,8 +229,10 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
             rows={3}
             value={formData.detailedDescription}
             onChange={(e) => onChange('detailedDescription', e.target.value)}
-            placeholder="Awaiting AI extraction..."
-            className="w-full text-xs md:text-sm p-3.5 bg-slate-50/50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-y"
+            placeholder="Describe the complaint in detail..."
+            disabled
+            readOnly
+            className={`w-full text-xs md:text-sm p-3.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none resize-y ${hl('detailedDescription', highlightedFields)}`}
           />
         </div>
       </section>
@@ -254,8 +265,8 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
               <label className="block text-xs font-medium text-slate-700 mb-1">Severity (Suggested)</label>
               <select
                 value={formData.suggestedSeverity}
-                onChange={(e) => onChange('suggestedSeverity', e.target.value as any)}
-                className="w-full text-xs md:text-sm px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                disabled
+                className={`w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-900 font-medium cursor-not-allowed select-none ${hl('suggestedSeverity', highlightedFields)}`}
               >
                 <option value="">Select Severity...</option>
                 <option value="Critical">Critical</option>
@@ -271,7 +282,9 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
                 value={formData.suggestedNextAction}
                 onChange={(e) => onChange('suggestedNextAction', e.target.value)}
                 placeholder="e.g. Route to QA Investigation & Issue Replacement"
-                className="w-full text-xs md:text-sm px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                disabled
+                readOnly
+                className={`w-full text-xs md:text-sm px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none ${hl('suggestedNextAction', highlightedFields)}`}
               />
             </div>
           </div>
@@ -283,7 +296,9 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
               value={formData.riskAssessment}
               onChange={(e) => onChange('riskAssessment', e.target.value)}
               placeholder="Potential moisture ingress or primary packaging seal failure leading to capsule discoloration..."
-              className="w-full text-xs md:text-sm p-3.5 bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-y"
+              disabled
+              readOnly
+              className={`w-full text-xs md:text-sm p-3.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 cursor-not-allowed select-none resize-y ${hl('riskAssessment', highlightedFields)}`}
             />
           </div>
         </div>

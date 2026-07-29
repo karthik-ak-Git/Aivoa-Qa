@@ -161,3 +161,33 @@ export async function updateComplaint(
 export async function deleteComplaint(complaintId: string): Promise<void> {
   await request<void>(`/api/complaints/${complaintId}`, { method: 'DELETE' });
 }
+
+// ── Copilot AI endpoints ──
+
+export interface CopilotResult {
+  form_data: Record<string, unknown>;
+  confidence: number;
+  agent_used: string;
+  sources_used: string[];
+}
+
+export async function copilotWrite(query: string, currentForm?: Record<string, unknown>): Promise<CopilotResult> {
+  return request<CopilotResult>('/api/copilot/write', {
+    method: 'POST',
+    body: JSON.stringify({ query, current_form: currentForm || null }),
+  });
+}
+
+export async function copilotEdit(instruction: string, currentForm: Record<string, unknown>): Promise<CopilotResult> {
+  return request<CopilotResult>('/api/copilot/edit', {
+    method: 'POST',
+    body: JSON.stringify({ instruction, current_form: currentForm }),
+  });
+}
+
+export async function copilotExtractText(text: string, filename?: string): Promise<CopilotResult> {
+  return request<CopilotResult>('/api/copilot/extract-text', {
+    method: 'POST',
+    body: JSON.stringify({ text, filename: filename || 'pasted_text' }),
+  });
+}
