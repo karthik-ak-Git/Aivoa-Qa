@@ -6,7 +6,9 @@ from fastapi.responses import JSONResponse
 from app.core.config import get_settings
 from app.core.logger import setup_logging, get_logger
 from app.api.copilot import router as copilot_router
+from app.api.copilot_sub import router as copilot_sub_router
 from app.api.health import router as health_router
+from app.api.complaints import router as complaints_router
 
 settings = get_settings()
 logger = setup_logging()
@@ -166,7 +168,9 @@ app.add_middleware(
 )
 
 app.include_router(copilot_router)
+app.include_router(copilot_sub_router)
 app.include_router(health_router)
+app.include_router(complaints_router)
 
 
 @app.exception_handler(Exception)
@@ -176,7 +180,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={
             "detail": "Internal server error",
-            "error": str(exc) if settings.DEBUG else "An unexpected error occurred",
+            "error": "An unexpected error occurred" if not settings.DEBUG else str(exc)[:200],
         },
     )
 
