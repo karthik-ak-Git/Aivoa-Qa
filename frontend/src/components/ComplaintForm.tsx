@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Calendar, Shield, RotateCcw, Save } from 'lucide-react';
+import { Calendar, Shield, RotateCcw, Save, Sparkles } from 'lucide-react';
 import { ComplaintFormData } from '../types';
 
 interface ComplaintFormProps {
