@@ -6,89 +6,6 @@ from app.core.logger import get_logger
 
 logger = get_logger("knowledge.loader")
 
-KNOWLEDGE_DOMAINS = {
-    "complaint_terms": {
-        "path": "complaint_terms/complaint_terms.md",
-        "description": "Complaint terminology and classification",
-    },
-    "complaint_categories": {
-        "path": "complaint_categories/complaint_categories.md",
-        "description": "Complaint category taxonomy",
-    },
-    "complaint_examples": {
-        "path": "complaint_examples/complaint_examples.json",
-        "description": "Structured complaint case studies",
-    },
-    "root_cause_library": {
-        "path": "root_cause_library/root_cause_library.md",
-        "description": "Root cause analysis library (6M taxonomy)",
-    },
-    "CAPA": {
-        "path": "CAPA/CAPA_knowledge.md",
-        "description": "Corrective and Preventive Action knowledge",
-    },
-    "medicines": {
-        "path": "medicines/medicines_index.md",
-        "description": "Drug knowledge base",
-    },
-    "regulations": {
-        "path": "regulations/regulatory_framework.md",
-        "description": "Regulatory framework (FDA, ICH, EU GMP, WHO)",
-    },
-    "FDA_recalls": {
-        "path": "FDA_recalls/FDA_recalls.md",
-        "description": "FDA recall case studies and classifications",
-    },
-    "warning_letters": {
-        "path": "warning_letters/FDA_warning_letters.md",
-        "description": "FDA warning letter analyses",
-    },
-    "manufacturing": {
-        "path": "manufacturing/manufacturing_stages.md",
-        "description": "Manufacturing stages with CPPs",
-    },
-    "packaging": {
-        "path": "packaging/packaging_knowledge.md",
-        "description": "Packaging systems and defect taxonomy",
-    },
-    "quality_control": {
-        "path": "quality_control/quality_control_extended.md",
-        "description": "Testing procedures and OOS/OOT handling",
-    },
-    "validation": {
-        "path": "validation/validation_documentation_extended.md",
-        "description": "Process, equipment, cleaning validation",
-    },
-    "supplier_management": {
-        "path": "supplier_management/supplier_management_extended.md",
-        "description": "Supplier qualification and auditing",
-    },
-    "deviations": {
-        "path": "deviations/deviations.md",
-        "description": "Deviation management framework",
-    },
-    "investigations": {
-        "path": "investigations/investigations.md",
-        "description": "Investigation procedures and RCA methods",
-    },
-    "training": {
-        "path": "training/training_materials_extended.md",
-        "description": "GMP training and competency requirements",
-    },
-    "equipment": {
-        "path": "equipment/pharmaceutical_equipment.md",
-        "description": "Pharmaceutical equipment knowledge",
-    },
-    "pharmaceutical_dictionary": {
-        "path": "pharmaceutical_dictionary/pharmaceutical_dictionary.md",
-        "description": "Pharmaceutical terminology glossary",
-    },
-    "dosage_forms": {
-        "path": "dosage_forms/dosage_forms.md",
-        "description": "Dosage form specifications",
-    },
-}
-
 
 def find_knowledge_base() -> str:
     backend_dir = Path(__file__).parent.parent.parent  # backend/
@@ -107,6 +24,80 @@ def find_knowledge_base() -> str:
 
 
 def load_knowledge_base() -> list[dict[str, Any]]:
+    """Load from Supabase. Falls back to local files if Supabase unavailable."""
+    try:
+        docs = _load_from_supabase()
+        if docs:
+            return docs
+    except Exception as e:
+        logger.warning(f"Supabase load failed ({e}), falling back to local files")
+
+    return _load_from_files()
+
+
+def _load_from_supabase() -> list[dict[str, Any]]:
+    """Load all knowledge documents from Supabase."""
+    import httpx
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
+        return []
+
+    rest_url = f"{settings.SUPABASE_URL}/rest/v1"
+    headers = {
+        "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
+    }
+
+    docs = []
+    offset = 0
+    batch_size = 1000
+
+    while True:
+        resp = httpx.get(
+            f"{rest_url}/knowledge_documents",
+            params={
+                "select": "id,title,content,domain,source,chunk_index,total_chunks",
+                "order": "domain,chunk_index",
+                "limit": str(batch_size),
+                "offset": str(offset),
+            },
+            headers=headers,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        rows = resp.json()
+        if not rows:
+            break
+
+        for row in rows:
+            docs.append({
+                "id": row["id"],
+                "content": row["content"],
+                "domain": row["domain"],
+                "source": row["source"],
+                "title": row["title"],
+                "metadata": {
+                    "domain": row["domain"],
+                    "source_file": row["source"],
+                    "chunk_index": row["chunk_index"],
+                    "total_chunks": row["total_chunks"],
+                },
+            })
+
+        offset += batch_size
+        if len(rows) < batch_size:
+            break
+
+    logger.info(f"Loaded {len(docs)} documents from Supabase")
+    return docs
+
+
+def _load_from_files() -> list[dict[str, Any]]:
+    """Load from local knowledge-base files (fallback)."""
+    from app.knowledge.loader_files import KNOWLEDGE_DOMAINS, chunk_document
+
     kb_path = find_knowledge_base()
     documents = []
     for domain, info in KNOWLEDGE_DOMAINS.items():
@@ -138,28 +129,3 @@ def load_knowledge_base() -> list[dict[str, Any]]:
             logger.error(f"Failed to load domain {domain}: {e}")
     logger.info(f"Total documents loaded: {len(documents)}")
     return documents
-
-
-def chunk_document(content: str, domain: str, chunk_size: int = 1000, overlap: int = 200) -> list[str]:
-    lines = content.split("\n")
-    chunks = []
-    current_chunk = []
-    current_size = 0
-
-    for line in lines:
-        current_chunk.append(line)
-        current_size += len(line)
-        if current_size >= chunk_size:
-            chunks.append("\n".join(current_chunk))
-            if overlap > 0:
-                overlap_lines = current_chunk[-overlap // 10:]
-                current_chunk = overlap_lines
-                current_size = sum(len(l) for l in overlap_lines)
-            else:
-                current_chunk = []
-                current_size = 0
-
-    if current_chunk:
-        chunks.append("\n".join(current_chunk))
-
-    return chunks if chunks else [content[:chunk_size]]

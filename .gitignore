@@ -17,7 +17,7 @@ venv/
 .venv/
 env/
 
-# ChromaDB local data
+# ChromaDB local data (now in Supabase)
 backend/data/
 
 # IDE
@@ -54,9 +54,6 @@ ehthumbs.db
 tmp/
 temp/
 *.tmp
-
-# Prototypes and temporary projects
-frontend_prototype/
 
 # Documentation build
 docs/_build/

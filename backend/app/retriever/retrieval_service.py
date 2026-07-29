@@ -1,6 +1,6 @@
 from typing import Any
 from app.retriever.vector_store import VectorStore
-from app.knowledge.loader import KNOWLEDGE_DOMAINS
+from app.knowledge.loader_files import KNOWLEDGE_DOMAINS
 from app.core.logger import get_logger
 
 logger = get_logger("retriever.service")

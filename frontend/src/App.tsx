@@ -9,50 +9,60 @@ import { setSavedComplaints, addComplaint, updateComplaint, deleteComplaint } fr
 import { setActiveTab } from './store/uiSlice';
 import { INITIAL_EMPTY_FORM } from './sampleData';
 import { ComplaintFormData } from './types';
+import * as api from './services/api';
 
 export default function App() {
   const dispatch = useAppDispatch();
   const formData = useAppSelector((state) => state.form.formData);
   const isExtracting = useAppSelector((state) => state.form.isExtracting);
-  const isBlocked = true;
+  const isBlocked = isExtracting;
   const isAssessingRisk = useAppSelector((state) => state.form.isAssessingRisk);
   const notification = useAppSelector((state) => state.form.notification);
   const savedComplaints = useAppSelector((state) => state.complaints.savedComplaints);
   const activeTab = useAppSelector((state) => state.ui.activeTab);
 
-  // Initialize from local storage on mount
+  // Load complaints from backend on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('pharma_complaints_v1');
-      if (stored) {
-        dispatch(setSavedComplaints(JSON.parse(stored)));
-      } else {
-        const sampleRecord: ComplaintFormData = {
-          id: 'CMP-2026-0038',
-          status: 'Under QA Investigation',
-          complaintSource: 'Email Intake',
-          customerName: 'Apex Pharmaceuticals Distribution GmbH',
-          productName: 'Amoxicillin Trihydrate 500mg FDF Capsules',
-          productStrength: '500mg Alu-Alu Blister',
-          batchNumber: 'AMX-2026-094',
-          manufacturingDate: '2026-03-10',
-          expiryDate: '2028-03-09',
-          quantityAffected: '240',
-          quantityUnit: 'kg',
-          complaintType: 'Discoloration & Blister Seal Defect',
-          complaintDate: '2026-07-24',
-          detailedDescription: 'Brownish capsule discoloration observed in 15 blister packs. Secondary packaging heat seal compromised allowing humidity ingress.',
-          suggestedSeverity: 'Major',
-          suggestedNextAction: 'Route to QA Investigation & Issue Replacement',
-          riskAssessment: 'Potential moisture ingress or primary packaging seal failure leading to capsule discoloration. Requires immediate retain sample inspection and CAPA review.',
-          createdAt: new Date().toISOString(),
-        };
-        dispatch(setSavedComplaints([sampleRecord]));
-        localStorage.setItem('pharma_complaints_v1', JSON.stringify([sampleRecord]));
-      }
-    } catch (e) {
-      console.error('Failed loading localStorage:', e);
-    }
+    api.fetchComplaints()
+      .then((complaints) => {
+        if (complaints.length > 0) {
+          dispatch(setSavedComplaints(complaints));
+        } else {
+          // Seed with sample data on first load
+          const sampleRecord: ComplaintFormData = {
+            id: 'CMP-2026-0038',
+            status: 'Under QA Investigation',
+            complaintSource: 'Email Intake',
+            customerName: 'Apex Pharmaceuticals Distribution GmbH',
+            productName: 'Amoxicillin Trihydrate 500mg FDF Capsules',
+            productStrength: '500mg Alu-Alu Blister',
+            batchNumber: 'AMX-2026-094',
+            manufacturingDate: '2026-03-10',
+            expiryDate: '2028-03-09',
+            quantityAffected: '240',
+            quantityUnit: 'kg',
+            complaintType: 'Discoloration & Blister Seal Defect',
+            complaintDate: '2026-07-24',
+            detailedDescription: 'Brownish capsule discoloration observed in 15 blister packs. Secondary packaging heat seal compromised allowing humidity ingress.',
+            suggestedSeverity: 'Major',
+            suggestedNextAction: 'Route to QA Investigation & Issue Replacement',
+            riskAssessment: 'Potential moisture ingress or primary packaging seal failure leading to capsule discoloration. Requires immediate retain sample inspection and CAPA review.',
+            createdAt: new Date().toISOString(),
+          };
+          api.createComplaint(sampleRecord).then((created) => {
+            dispatch(setSavedComplaints([created]));
+          }).catch(() => {
+            dispatch(setSavedComplaints([sampleRecord]));
+          });
+        }
+      })
+      .catch(() => {
+        // Backend offline — fall back to localStorage
+        try {
+          const stored = localStorage.getItem('pharma_complaints_v1');
+          if (stored) dispatch(setSavedComplaints(JSON.parse(stored)));
+        } catch { /* ignore */ }
+      });
   }, [dispatch]);
 
   const showNotification = (message: string, type: 'success' | 'info' | 'error' = 'info') => {
@@ -71,27 +81,26 @@ export default function App() {
     showNotification('Form cleared.', 'info');
   };
 
-  const handleSaveComplaint = () => {
-    const newId = formData.id || `CMP-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    const recordToSave: ComplaintFormData = {
-      ...formData,
-      id: newId,
-      createdAt: new Date().toISOString(),
-    };
+  const handleSaveComplaint = async () => {
+    try {
+      const existingId = savedComplaints.find(
+        (c) => c.productName === formData.productName && c.batchNumber === formData.batchNumber && c.id,
+      )?.id;
 
-    const existingIndex = savedComplaints.findIndex((c) => c.id === newId);
-    if (existingIndex >= 0) {
-      dispatch(updateComplaint(recordToSave));
-    } else {
-      dispatch(addComplaint(recordToSave));
+      let saved: ComplaintFormData;
+      if (existingId) {
+        saved = await api.updateComplaint(existingId, formData);
+        dispatch(updateComplaint(saved));
+      } else {
+        saved = await api.createComplaint(formData);
+        dispatch(addComplaint(saved));
+      }
+      dispatch(replaceFormData(saved));
+      showNotification(`Complaint ${saved.id} saved to database.`, 'success');
+    } catch (err: any) {
+      console.error('Save failed:', err);
+      showNotification(`Save failed: ${err.message}`, 'error');
     }
-    localStorage.setItem('pharma_complaints_v1', JSON.stringify(
-      existingIndex >= 0
-        ? savedComplaints.map((c, i) => i === existingIndex ? recordToSave : c)
-        : [recordToSave, ...savedComplaints]
-    ));
-    dispatch(replaceFormData(recordToSave));
-    showNotification(`Complaint ${newId} saved to database.`, 'success');
   };
 
   const handleAssessRisk = async () => {
@@ -121,12 +130,15 @@ export default function App() {
     }
   };
 
-  const handleDeleteComplaint = (id: string) => {
-    dispatch(deleteComplaint(id));
-    localStorage.setItem('pharma_complaints_v1', JSON.stringify(
-      savedComplaints.filter((c) => c.id !== id)
-    ));
-    showNotification(`Complaint ${id} removed.`, 'info');
+  const handleDeleteComplaint = async (id: string) => {
+    try {
+      await api.deleteComplaint(id);
+      dispatch(deleteComplaint(id));
+      showNotification(`Complaint ${id} removed.`, 'info');
+    } catch (err: any) {
+      console.error('Delete failed:', err);
+      showNotification(`Delete failed: ${err.message}`, 'error');
+    }
   };
 
   return (

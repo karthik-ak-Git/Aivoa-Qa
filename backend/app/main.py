@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.core.logger import setup_logging, get_logger
 from app.api.copilot import router as copilot_router
 from app.api.copilot_sub import router as copilot_sub_router
+from app.api.complaint_agents import router as agents_router, set_workflow
 from app.api.health import router as health_router
 from app.api.complaints import router as complaints_router
 
@@ -49,6 +50,8 @@ async def lifespan(app: FastAPI):
         from app.knowledge.loader import load_knowledge_base
         from app.retriever.vector_store import VectorStore
         from app.retriever.retrieval_service import RetrievalService
+        from app.services.groq_service import get_groq_service
+        from app.graph.complaint_workflow import ComplaintWorkflow
         from app.services.openrouter_service import get_openrouter_service
         from app.services.conversation_service import ConversationService
         from app.services.validation_service import ResponseValidationService
@@ -128,6 +131,14 @@ async def lifespan(app: FastAPI):
         )
         app_state["workflow"] = workflow
 
+        # Initialize new complaint agents (Writer, Editor, OCR)
+        logger.info("Initializing Complaint Agents (Writer + Editor + OCR)...")
+        groq_service = get_groq_service()
+        complaint_workflow = ComplaintWorkflow(groq=groq_service, retrieval=retrieval_service)
+        app_state["complaint_workflow"] = complaint_workflow
+        set_workflow(complaint_workflow)
+        logger.info("Complaint agents ready: Writer (gemma2-9b-it), Editor (gemma2-9b-it), OCR (gemma2-9b-it)")
+
         elapsed = time.time() - start
         logger.info(f"{settings.APP_NAME} ready in {elapsed:.2f}s ({indexed} docs indexed)")
 
@@ -169,6 +180,7 @@ app.add_middleware(
 
 app.include_router(copilot_router)
 app.include_router(copilot_sub_router)
+app.include_router(agents_router)
 app.include_router(health_router)
 app.include_router(complaints_router)
 

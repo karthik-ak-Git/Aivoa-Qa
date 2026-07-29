@@ -133,7 +133,11 @@ async def create_complaint(request: CreateComplaint):
         try:
             result = await sb.insert("complaints", record)
             if result:
-                record = result if isinstance(result, dict) else record
+                # Supabase REST returns a list; use first item if present
+                if isinstance(result, list) and len(result) > 0:
+                    record = result[0]
+                elif isinstance(result, dict):
+                    record = result
             logger.info(f"Complaint created in Supabase: {complaint_number}")
         except Exception as e:
             logger.warning(f"Supabase insert failed, using in-memory store: {e}")
@@ -337,3 +341,47 @@ async def update_complaint(complaint_id: str, request: ComplaintUpdate):
 
     record.update(update_data)
     return _to_response(record)
+
+
+# ── DELETE /api/complaints/{complaint_id} ──
+
+@router.delete(
+    "/{complaint_id}",
+    status_code=204,
+    summary="Delete a complaint",
+    description="Permanently delete a complaint by its ID or complaint number.",
+    responses={
+        204: {"description": "Complaint deleted"},
+        404: {"description": "Complaint not found"},
+    },
+)
+async def delete_complaint(complaint_id: str):
+    sb = await _get_supabase()
+
+    if sb:
+        try:
+            existing = await sb.select_one("complaints", filters={"id": complaint_id})
+            if not existing:
+                existing = await sb.select_one(
+                    "complaints", filters={"complaint_number": complaint_id}
+                )
+            if existing:
+                await sb.delete("complaints", filters={"id": existing["id"]})
+                logger.info(f"Complaint deleted from Supabase: {complaint_id}")
+                return
+        except Exception as e:
+            logger.warning(f"Supabase delete failed: {e}")
+
+    # Fallback: in-memory
+    record = _complaints_store.pop(complaint_id, None)
+    if not record:
+        for r in list(_complaints_store.values()):
+            if r.get("complaint_number") == complaint_id:
+                _complaints_store.pop(r["id"], None)
+                record = r
+                break
+
+    if not record:
+        raise HTTPException(status_code=404, detail=f"Complaint '{complaint_id}' not found")
+
+    logger.info(f"Complaint deleted: {complaint_id}")

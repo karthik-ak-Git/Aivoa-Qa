@@ -8,16 +8,14 @@ logger = get_logger("retriever.vector_store")
 
 
 class VectorStore:
-    """ChromaDB-backed vector store for knowledge retrieval."""
+    """In-memory ChromaDB vector store. Docs loaded from Supabase on startup."""
 
     def __init__(self):
-        settings = get_settings()
-        self.client = chromadb.PersistentClient(
-            path=settings.VECTOR_DB_PATH,
+        self.client = chromadb.Client(
             settings=ChromaSettings(anonymized_telemetry=False),
         )
         self.collection = self.client.get_or_create_collection(
-            name=settings.VECTOR_COLLECTION_NAME,
+            name="pharmaqms_knowledge",
             metadata={"hnsw:space": "cosine"},
         )
         self._is_indexed = False
@@ -27,10 +25,10 @@ class VectorStore:
         return self._is_indexed and self.collection.count() > 0
 
     def index_documents(self, documents: list[dict[str, Any]]) -> int:
-        # Skip if already indexed in ChromaDB
+        # Always re-index since we're in-memory
         existing_count = self.collection.count()
         if existing_count > 0:
-            logger.info(f"Vector store already has {existing_count} docs, skipping re-index")
+            logger.info(f"Vector store already has {existing_count} docs")
             self._is_indexed = True
             return existing_count
 

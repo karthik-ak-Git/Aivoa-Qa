@@ -1,4 +1,3 @@
-import React from 'react';
 import { ShieldCheck, FolderKanban, PlusCircle } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setActiveTab } from '../store/uiSlice';

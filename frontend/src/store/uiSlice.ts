@@ -2,7 +2,6 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UIState {
   activeTab: 'form' | 'logs';
-  sidebarTab: 'chat' | 'extractor';
   chatMessages: Array<{
     id: string;
     role: 'user' | 'assistant' | 'system';
@@ -10,8 +9,6 @@ interface UIState {
     timestamp: string;
   }>;
   isSending: boolean;
-  rawText: string;
-  selectedSample: string;
   searchTerm: string;
   statusFilter: string;
   severityFilter: string;
@@ -19,7 +16,6 @@ interface UIState {
 
 const initialState: UIState = {
   activeTab: 'form',
-  sidebarTab: 'chat',
   chatMessages: [
     {
       id: 'welcome-1',
@@ -30,8 +26,6 @@ Ask me anything about regulatory compliance, root cause analysis (ICH Q9), or dr
     },
   ],
   isSending: false,
-  rawText: '',
-  selectedSample: '',
   searchTerm: '',
   statusFilter: 'ALL',
   severityFilter: 'ALL',
@@ -44,9 +38,6 @@ const uiSlice = createSlice({
     setActiveTab: (state, action: PayloadAction<'form' | 'logs'>) => {
       state.activeTab = action.payload;
     },
-    setSidebarTab: (state, action: PayloadAction<'chat' | 'extractor'>) => {
-      state.sidebarTab = action.payload;
-    },
     addChatMessage: (state, action: PayloadAction<UIState['chatMessages'][0]>) => {
       state.chatMessages.push(action.payload);
     },
@@ -55,12 +46,6 @@ const uiSlice = createSlice({
     },
     setIsSending: (state, action: PayloadAction<boolean>) => {
       state.isSending = action.payload;
-    },
-    setRawText: (state, action: PayloadAction<string>) => {
-      state.rawText = action.payload;
-    },
-    setSelectedSample: (state, action: PayloadAction<string>) => {
-      state.selectedSample = action.payload;
     },
     setSearchTerm: (state, action: PayloadAction<string>) => {
       state.searchTerm = action.payload;
@@ -76,12 +61,9 @@ const uiSlice = createSlice({
 
 export const {
   setActiveTab,
-  setSidebarTab,
   addChatMessage,
   setChatMessages,
   setIsSending,
-  setRawText,
-  setSelectedSample,
   setSearchTerm,
   setStatusFilter,
   setSeverityFilter,

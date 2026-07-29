@@ -1,4 +1,3 @@
-import React from 'react';
 import { ComplaintFormData } from '../types';
 import { Search, Download, Trash2, ExternalLink, ArrowLeft } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
