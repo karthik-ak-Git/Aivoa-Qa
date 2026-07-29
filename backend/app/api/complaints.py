@@ -9,13 +9,13 @@ from app.schemas.complaint import (
     ComplaintUpdate,
 )
 from app.core.logger import get_logger
+from app.services import local_store
 
 logger = get_logger("api.complaints")
 router = APIRouter(prefix="/api/complaints", tags=["Complaints"])
 
-# In-memory store (used when Supabase is unavailable)
-_complaints_store: dict[str, dict] = {}
-_complaint_counter: int = 0
+# Persistent JSON file store (fallback when Supabase is unavailable)
+_complaint_counter: int = len(local_store.get_all())
 
 
 def _generate_complaint_number() -> str:
@@ -140,10 +140,10 @@ async def create_complaint(request: CreateComplaint):
                     record = result
             logger.info(f"Complaint created in Supabase: {complaint_number}")
         except Exception as e:
-            logger.warning(f"Supabase insert failed, using in-memory store: {e}")
-            _complaints_store[complaint_id] = record
+            logger.warning(f"Supabase insert failed, using local store: {e}")
+            local_store.set(complaint_id, record)
     else:
-        _complaints_store[complaint_id] = record
+        local_store.set(complaint_id, record)
 
     logger.info(f"Complaint created: {complaint_number} - {request.title[:50]}")
     return _to_response(record)
@@ -208,8 +208,8 @@ async def list_complaints(
         except Exception as e:
             logger.warning(f"Supabase query failed, using in-memory store: {e}")
 
-    # Fallback: in-memory
-    records = list(_complaints_store.values())
+    # Fallback: local persistent store
+    records = list(local_store.get_all().values())
 
     if status:
         records = [r for r in records if r.get("status") == status]
@@ -267,14 +267,10 @@ async def get_complaint(complaint_id: str):
         except Exception as e:
             logger.warning(f"Supabase query failed: {e}")
 
-    # Fallback: in-memory
-    record = _complaints_store.get(complaint_id)
+    # Fallback: local persistent store
+    record = local_store.get(complaint_id)
     if not record:
-        # Search by complaint_number
-        for r in _complaints_store.values():
-            if r.get("complaint_number") == complaint_id:
-                record = r
-                break
+        record = local_store.find(lambda r: r.get("complaint_number") == complaint_id)
 
     if not record:
         raise HTTPException(status_code=404, detail=f"Complaint '{complaint_id}' not found")
@@ -328,18 +324,16 @@ async def update_complaint(complaint_id: str, request: ComplaintUpdate):
         except Exception as e:
             logger.warning(f"Supabase update failed: {e}")
 
-    # Fallback: in-memory
-    record = _complaints_store.get(complaint_id)
+    # Fallback: local persistent store
+    record = local_store.get(complaint_id)
     if not record:
-        for r in _complaints_store.values():
-            if r.get("complaint_number") == complaint_id:
-                record = r
-                break
+        record = local_store.find(lambda r: r.get("complaint_number") == complaint_id)
 
     if not record:
         raise HTTPException(status_code=404, detail=f"Complaint '{complaint_id}' not found")
 
     record.update(update_data)
+    local_store.set(record["id"], record)
     return _to_response(record)
 
 
@@ -372,14 +366,13 @@ async def delete_complaint(complaint_id: str):
         except Exception as e:
             logger.warning(f"Supabase delete failed: {e}")
 
-    # Fallback: in-memory
-    record = _complaints_store.pop(complaint_id, None)
+    # Fallback: local persistent store
+    record = local_store.get(complaint_id)
     if not record:
-        for r in list(_complaints_store.values()):
-            if r.get("complaint_number") == complaint_id:
-                _complaints_store.pop(r["id"], None)
-                record = r
-                break
+        record = local_store.find(lambda r: r.get("complaint_number") == complaint_id)
+
+    if record:
+        local_store.delete(record["id"])
 
     if not record:
         raise HTTPException(status_code=404, detail=f"Complaint '{complaint_id}' not found")
