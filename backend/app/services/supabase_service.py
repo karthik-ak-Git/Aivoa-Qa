@@ -38,7 +38,10 @@ class SupabaseService:
             resp = await client.request(
                 method, url, json=data, params=params, headers=self.headers
             )
-            resp.raise_for_status()
+            if not resp.is_success:
+                body = resp.text[:500]
+                logger.error(f"Supabase API error {resp.status_code}: {body}")
+                resp.raise_for_status()
             return resp.json() if resp.content else None
 
     # ---- CRUD helpers ----

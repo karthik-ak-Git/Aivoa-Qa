@@ -1,22 +1,16 @@
-import { ShieldCheck, FolderKanban, PlusCircle } from 'lucide-react';
+import { ShieldCheck, PlusCircle } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setActiveTab } from '../store/uiSlice';
 import { setStatus } from '../store/formSlice';
 
 interface HeaderProps {
-  savedCount: number;
   onNewComplaint: () => void;
-  onOpenSavedModal: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  savedCount,
   onNewComplaint,
-  onOpenSavedModal,
 }) => {
   const dispatch = useAppDispatch();
   const status = useAppSelector((state) => state.form.formData.status);
-  const activeTab = useAppSelector((state) => state.ui.activeTab);
 
   const getStatusBadgeStyle = (currentStatus: string) => {
     switch (currentStatus) {
@@ -74,34 +68,10 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={onNewComplaint}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
-                activeTab === 'form'
-                  ? 'bg-blue-600 text-white shadow-2xs hover:bg-blue-700'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all bg-blue-600 text-white shadow-2xs hover:bg-blue-700"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               New Complaint
-            </button>
-
-            <button
-              onClick={() => {
-                dispatch(setActiveTab('logs'));
-                onOpenSavedModal();
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
-                activeTab === 'logs'
-                  ? 'bg-blue-600 text-white shadow-2xs hover:bg-blue-700'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              <FolderKanban className="w-3.5 h-3.5" />
-              Complaint Register
-              {savedCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-full">
-                  {savedCount}
-                </span>
-              )}
             </button>
           </div>
         </div>

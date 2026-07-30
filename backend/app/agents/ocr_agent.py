@@ -1,54 +1,70 @@
-"""OCR Extraction Agent — extracts complaint data from uploaded documents (PDF/text/image)."""
+"""OCR Extraction Agent — extracts complaint data from uploaded documents."""
+
 import json
+import re
 from app.services.groq_service import GroqService
 from app.retriever.retrieval_service import RetrievalService
 from app.core.logger import get_logger
 
 logger = get_logger("agents.ocr")
 
-OCR_SYSTEM_PROMPT = """You are an expert Pharmaceutical Complaint Data Extractor for an FDA-regulated drug manufacturer.
+OCR_SYSTEM_PROMPT = """You are a Pharmaceutical Complaint Data Extractor for an FDA-regulated drug manufacturer.
 
-Your job: Given extracted text from a document (complaint letter, email, report, CAPA, deviation), extract ALL available complaint form fields.
+Given document text, extract ALL available complaint form fields. Return ONLY a valid JSON object.
 
-You MUST return ONLY a valid JSON object with EXACTLY these fields (no markdown, no extra text):
+EXAMPLES:
 
+Input: "Dear Sir, We received a complaint from ABC Pharma about Metformin 500mg tablets batch MT-23145. The tablets show discoloration. Received via email on 2026-03-15."
+Output:
 {
-  "status": "Pending Triage",
-  "complaintSource": "string - infer from document type (email=Email Intake, letter=Customer Portal, report=Field Report)",
-  "customerName": "string - company or person who filed the complaint",
-  "productName": "string - full product name with strength and dosage form",
-  "productStrength": "string - strength and packaging",
-  "batchNumber": "string - batch/lot number",
-  "manufacturingDate": "string - YYYY-MM-DD or empty",
-  "expiryDate": "string - YYYY-MM-DD or empty",
-  "quantityAffected": "string - quantity affected",
-  "quantityUnit": "string - unit (kg, tablets, capsules, vials, strips, packs)",
-  "complaintType": "string - specific defect/description",
-  "complaintDate": "string - YYYY-MM-DD",
-  "detailedDescription": "string - comprehensive description (minimum 50 words)",
-  "suggestedSeverity": "Critical or Major or Minor",
-  "suggestedNextAction": "string - recommended immediate action",
-  "riskAssessment": "string - risk assessment referencing ICH Q9",
-  "extracted_fields": {
-    "document_type": "string - type of document (email, letter, report, form)",
-    "date_received": "string - when the document was received",
-    "contact_info": "string - any contact information found",
-    "key_claims": "array of strings - main complaint claims",
-    "evidence_references": "array of strings - any referenced batch numbers, dates, etc."
-  }
+  "complaintSource": "Email Intake",
+  "customerName": "ABC Pharma",
+  "productName": "Metformin 500mg Tablets",
+  "productStrength": "500mg",
+  "batchNumber": "MT-23145",
+  "manufacturingDate": "",
+  "expiryDate": "",
+  "quantityAffected": "",
+  "quantityUnit": "tablets",
+  "complaintType": "Discoloration in tablets",
+  "complaintDate": "2026-03-15",
+  "detailedDescription": "ABC Pharma reported discoloration found in Metformin 500mg tablets from batch MT-23145. The affected tablets show visible color change indicating possible degradation or contamination.",
+  "suggestedSeverity": "Major",
+  "suggestedNextAction": "Quarantine batch and initiate laboratory investigation",
+  "riskAssessment": "Product quality defect affecting appearance; no immediate patient safety risk reported but requires investigation per ICH Q9"
+}
+
+Input: "URGENT: Patient reported burning sensation after using Hand Sanitizer Gel 70% batch HS-8872. Report from hospital pharmacy."
+Output:
+{
+  "complaintSource": "Field Report",
+  "customerName": "Hospital Pharmacy",
+  "productName": "Hand Sanitizer Gel 70%",
+  "productStrength": "70%",
+  "batchNumber": "HS-8872",
+  "manufacturingDate": "",
+  "expiryDate": "",
+  "quantityAffected": "1",
+  "quantityUnit": "bottles",
+  "complaintType": "Adverse skin reaction to hand sanitizer",
+  "complaintDate": "",
+  "detailedDescription": "A patient reported a burning sensation after using Hand Sanitizer Gel 70% batch HS-8872. The report was filed by the hospital pharmacy. The complaint suggests a potential adverse reaction requiring immediate safety evaluation.",
+  "suggestedSeverity": "Critical",
+  "suggestedNextAction": "Immediate batch recall assessment and safety evaluation",
+  "riskAssessment": "Patient safety concern - adverse reaction reported. Critical severity per ICH Q9 risk management principles. Immediate investigation required."
 }
 
 RULES:
 1. Extract EVERY piece of relevant information from the document text
-2. If a field is not found in the document, leave it as an empty string (except status which defaults to "Pending Triage")
-3. For detailedDescription: synthesize the complaint narrative from the document content
-4. Severity assessment based on: patient safety risk = Critical, product quality = Major, cosmetic = Minor
-5. Infer complaintSource from the document format (email header → Email Intake, etc.)
-6. Return ONLY the JSON object, nothing else"""
+2. If a field is not found, leave as empty string
+3. detailedDescription: synthesize a clear complaint narrative from the document content (minimum 30 words)
+4. Severity: patient safety risk = Critical, product quality = Major, cosmetic/minor = Minor
+5. complaintSource: email = "Email Intake", letter/report = "Customer Portal", field/hospital = "Field Report"
+6. Return ONLY valid JSON — no markdown, no code fences, no explanation text"""
 
 
 class OCRextractionAgent:
-    """Extracts complaint data from uploaded documents using Groq + RAG."""
+    """Extracts complaint data from uploaded documents using LLM."""
 
     name = "ocr_extraction"
 
@@ -57,7 +73,6 @@ class OCRextractionAgent:
         self.retrieval = retrieval
 
     async def run(self, document_text: str, filename: str = "unknown") -> dict:
-        # Step 1: RAG retrieval for pharmaceutical context
         rag_docs = self.retrieval.retrieve_for_agent(
             query=document_text[:500],
             agent_domains=[
@@ -72,18 +87,14 @@ class OCRextractionAgent:
         if rag_docs:
             rag_context = "\n\nRELEVANT PHARMACEUTICAL KNOWLEDGE:\n"
             for i, doc in enumerate(rag_docs[:3], 1):
-                rag_context += f"\n[{i}] {doc.get('source', '')}: {doc['content'][:400]}\n"
+                rag_context += f"\n[{i}] {doc.get('source', '')}: {doc['content'][:500]}\n"
 
-        # Step 2: Build prompt
-        user_msg = f"""Extract complaint data from this document:
-
-DOCUMENT FILENAME: {filename}
+        user_msg = f"""DOCUMENT FILENAME: {filename}
 
 DOCUMENT TEXT:
-{document_text[:4000]}
+{document_text[:5000]}
 
-Extract all complaint form fields from this document and return as JSON."""
-
+Extract complaint form fields from this document and return as JSON."""
         if rag_context:
             user_msg += rag_context
 
@@ -92,48 +103,63 @@ Extract all complaint form fields from this document and return as JSON."""
             {"role": "user", "content": user_msg},
         ]
 
-        # Step 3: Generate
-        response = await self.groq.agenerate(messages, temperature=0.2, max_tokens=2048)
+        response = await self.groq.agenerate(messages, temperature=0.1, max_tokens=2048)
 
-        # Step 4: Parse
+        result = self._parse_response(response, document_text)
+
+        logger.info(
+            f"OCR agent extracted: product={result.get('productName', 'N/A')}, "
+            f"source={result.get('complaintSource', 'N/A')}, "
+            f"batch={result.get('batchNumber', 'N/A')}"
+        )
+
+        confidence = 0.8
+        completed = sum(1 for v in result.values() if isinstance(v, str) and len(v) > 2)
+        total = sum(1 for v in result.values() if isinstance(v, str))
+        if total > 0:
+            confidence = round(0.4 + 0.5 * (completed / total), 2)
+
+        return {
+            "form_data": result,
+            "confidence": min(confidence, 0.95),
+            "sources_used": [d.get("source", "") for d in rag_docs[:3]],
+        }
+
+    def _parse_response(self, response: str, fallback_text: str) -> dict:
+        clean = response.strip()
+        match = re.search(r"\{.*\}", clean, re.DOTALL)
+        if match:
+            clean = match.group()
+        else:
+            logger.error(f"No JSON found in OCR output: {clean[:200]}")
+            return self._defaults(fallback_text)
+
         try:
-            clean = response.strip()
-            if clean.startswith("```"):
-                clean = clean.split("\n", 1)[1]
-            if clean.endswith("```"):
-                clean = clean.rsplit("```", 1)[0]
-            clean = clean.strip()
             result = json.loads(clean)
-        except (json.JSONDecodeError, IndexError):
-            logger.error(f"Failed to parse OCR output: {response[:300]}")
-            result = {
-                "status": "Pending Triage",
-                "complaintSource": "Document Upload",
-                "customerName": "",
-                "productName": "",
-                "productStrength": "",
-                "batchNumber": "",
-                "manufacturingDate": "",
-                "expiryDate": "",
-                "quantityAffected": "",
-                "quantityUnit": "units",
-                "complaintType": "Document Upload",
-                "complaintDate": "",
-                "detailedDescription": document_text[:2000],
-                "suggestedSeverity": "Major",
-                "suggestedNextAction": "Route to QA Investigation",
-                "riskAssessment": "Requires investigation per ICH Q9 framework",
-                "extracted_fields": {
-                    "document_type": "unknown",
-                    "date_received": "",
-                    "contact_info": "",
-                    "key_claims": [],
-                    "evidence_references": [],
-                },
-            }
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse OCR JSON: {clean[:300]}")
+            return self._defaults(fallback_text)
 
-        # Ensure required fields
-        defaults = {
+        defaults = self._defaults("")
+        for field in defaults:
+            if field not in result or not result.get(field):
+                result[field] = defaults[field]
+
+        if "extracted_fields" not in result or not isinstance(result["extracted_fields"], dict):
+            result["extracted_fields"] = {
+                "document_type": "unknown",
+                "date_received": "",
+                "contact_info": "",
+                "key_claims": [],
+                "evidence_references": [],
+            }
+        if not result.get("detailedDescription") and fallback_text:
+            result["detailedDescription"] = fallback_text[:2000]
+
+        return result
+
+    def _defaults(self, fallback_text: str = "") -> dict:
+        return {
             "status": "Pending Triage",
             "complaintSource": "Document Upload",
             "customerName": "",
@@ -146,26 +172,15 @@ Extract all complaint form fields from this document and return as JSON."""
             "quantityUnit": "units",
             "complaintType": "",
             "complaintDate": "",
-            "detailedDescription": "",
+            "detailedDescription": fallback_text[:2000] if fallback_text else "",
             "suggestedSeverity": "Major",
             "suggestedNextAction": "Route to QA Investigation",
             "riskAssessment": "",
-        }
-        for field, default in defaults.items():
-            if field not in result or not result[field]:
-                result[field] = default
-
-        # Ensure extracted_fields dict exists
-        if "extracted_fields" not in result:
-            result["extracted_fields"] = {}
-
-        logger.info(
-            f"OCR agent extracted: product={result.get('productName', 'N/A')}, "
-            f"source={result.get('complaintSource', 'N/A')}"
-        )
-
-        return {
-            "form_data": result,
-            "confidence": 0.8,
-            "sources_used": [d.get("source", "") for d in rag_docs[:3]],
+            "extracted_fields": {
+                "document_type": "unknown",
+                "date_received": "",
+                "contact_info": "",
+                "key_claims": [],
+                "evidence_references": [],
+            },
         }

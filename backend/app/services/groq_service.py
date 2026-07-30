@@ -13,8 +13,8 @@ class GroqService:
     def __init__(self):
         settings = get_settings()
         self.api_key = settings.GROQ_API_KEY
-        self.model = "gemma2-9b-it"
-        self.fallback_model = "llama-3.3-70b-versatile"
+        self.model = settings.GROQ_MODEL or "llama-3.3-70b-versatile"
+        self.fallback_model = "llama-3.1-8b-instant"
         self.temperature = settings.GROQ_TEMPERATURE
         self.max_tokens = settings.GROQ_MAX_TOKENS
         self.base_url = "https://api.groq.com/openai/v1"

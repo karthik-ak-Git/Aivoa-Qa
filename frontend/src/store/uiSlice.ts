@@ -9,9 +9,6 @@ interface UIState {
     timestamp: string;
   }>;
   isSending: boolean;
-  searchTerm: string;
-  statusFilter: string;
-  severityFilter: string;
 }
 
 const initialState: UIState = {
@@ -26,9 +23,6 @@ Ask me anything about regulatory compliance, root cause analysis (ICH Q9), or dr
     },
   ],
   isSending: false,
-  searchTerm: '',
-  statusFilter: 'ALL',
-  severityFilter: 'ALL',
 };
 
 const uiSlice = createSlice({
@@ -47,15 +41,6 @@ const uiSlice = createSlice({
     setIsSending: (state, action: PayloadAction<boolean>) => {
       state.isSending = action.payload;
     },
-    setSearchTerm: (state, action: PayloadAction<string>) => {
-      state.searchTerm = action.payload;
-    },
-    setStatusFilter: (state, action: PayloadAction<string>) => {
-      state.statusFilter = action.payload;
-    },
-    setSeverityFilter: (state, action: PayloadAction<string>) => {
-      state.severityFilter = action.payload;
-    },
   },
 });
 
@@ -64,9 +49,6 @@ export const {
   addChatMessage,
   setChatMessages,
   setIsSending,
-  setSearchTerm,
-  setStatusFilter,
-  setSeverityFilter,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

@@ -18,6 +18,9 @@ from app.core.logger import get_logger, PerformanceLogger
 
 logger = get_logger("api.copilot.sub")
 
+# In-memory complaint store (CRUD endpoints removed; used by write/edit-via-chat)
+_complaint_store: dict = {}
+
 router = APIRouter(prefix="/api/copilot", tags=["AI Copilot"])
 
 
@@ -140,9 +143,8 @@ async def write_complaint_via_chat(
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
-    # Store complaint
-    from app.api.complaints import _complaints_store
-    _complaints_store[complaint_id] = complaint_record
+    global _complaint_store
+    _complaint_store[complaint_id] = complaint_record
 
     # Try Supabase
     try:
@@ -233,12 +235,10 @@ async def edit_complaint_via_chat(
 ):
     start_time = time.time()
 
-    # Find complaint
-    from app.api.complaints import _complaints_store
-    complaint = _complaints_store.get(request.complaint_id)
+    global _complaint_store
+    complaint = _complaint_store.get(request.complaint_id)
     if not complaint:
-        # Search by complaint_number
-        for r in _complaints_store.values():
+        for r in _complaint_store.values():
             if r.get("complaint_number") == request.complaint_id:
                 complaint = r
                 break

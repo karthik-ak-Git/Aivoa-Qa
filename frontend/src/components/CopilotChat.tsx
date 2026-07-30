@@ -77,14 +77,13 @@ export const CopilotChat: React.FC = () => {
     dispatch(setIsSending(true));
 
     try {
-      const text = await file.text();
-      const result = await api.copilotExtractText(text, file.name);
+      const result = await api.copilotExtractFile(file);
       dispatch(replaceFormData(result.form_data as any));
       dispatch(setNotification({ type: 'success', message: `Extracted from ${file.name}` }));
       dispatch(addChatMessage({
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: `📄 Data extracted from **${file.name}** (${(result.confidence * 100).toFixed(0)}% confidence)\n\n${formatSummary(result.form_data)}\n\n_Agent: ${result['agent_used']}_`,
+        content: `📄 Data extracted from **${file.name}** (${(result.confidence * 100).toFixed(0)}% confidence)\n\n${formatSummary(result.form_data)}\n\n_Agent: ${result.agent_used}_`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }));
     } catch (err: any) {
@@ -137,7 +136,7 @@ export const CopilotChat: React.FC = () => {
         <div className="flex gap-2">
           <input
             type="file"
-            accept=".txt,.csv,.eml,.msg,.pdf"
+            accept=".txt,.csv,.pdf,.docx,.png,.jpg,.jpeg,.tiff,.tif,.bmp"
             ref={fileInputRef}
             onChange={handleFileUpload}
             className="hidden"

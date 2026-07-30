@@ -11,3 +11,9 @@ langchain-core>=0.3.0
 langchain-groq>=0.3.0
 chromadb>=1.0.0
 httpx>=0.28.0
+# OCR & Document processing
+pytesseract>=0.3.10
+Pillow>=10.0.0
+PyMuPDF>=1.23.0
+python-docx>=1.1.0
+pdfminer.six>=20221105

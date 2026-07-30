@@ -1,8 +1,9 @@
-"""API endpoints for the 3 specialized complaint agents."""
+"""API endpoints for the complaint agents — write, edit, and OCR extraction."""
 import json
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel, Field
 from app.graph.complaint_workflow import ComplaintWorkflow
+from app.services.ocr_service import extract_text_from_bytes
 from app.core.logger import get_logger
 
 logger = get_logger("api.complaint_agents")
@@ -80,21 +81,21 @@ async def extract_from_document(
     file: UploadFile = File(None),
     text: str = Form(default=""),
 ):
-    """Extract complaint data from an uploaded document or pasted text."""
+    """Extract complaint data from an uploaded document (PDF, image, DOCX, TXT) or pasted text."""
     workflow = _get_workflow()
-
-    content = text
-    filename = file.filename if file else "unknown"
+    filename = file.filename if file else "pasted_text.txt"
 
     if file and not text:
         raw = await file.read()
-        try:
-            content = raw.decode("utf-8")
-        except UnicodeDecodeError:
-            try:
-                content = raw.decode("latin-1")
-            except Exception:
-                raise HTTPException(status_code=400, detail="Cannot read file as text. Please paste the document content instead.")
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if ext in ("png", "jpg", "jpeg", "tiff", "tif", "bmp", "pdf", "docx"):
+            result = extract_text_from_bytes(raw, filename)
+            content = result["text"]
+            logger.info(f"File extraction: method={result['method']}, success={result['success']}, chars={len(content)}")
+        else:
+            content = raw.decode("utf-8", errors="replace")
+    else:
+        content = text
 
     if not content.strip():
         raise HTTPException(status_code=400, detail="No content to extract from.")

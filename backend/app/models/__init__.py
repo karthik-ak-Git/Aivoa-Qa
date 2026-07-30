@@ -1,6 +1,5 @@
 from app.models.base import Base
 from app.models.user import User
-from app.models.complaint import Complaint, ComplaintStatus, ComplaintPriority, ComplaintSource
 from app.models.investigation import Investigation
 from app.models.capa import CAPA, CAPAType, CAPAStatus
 from app.models.knowledge_document import KnowledgeDocument
@@ -10,10 +9,6 @@ from app.models.audit_log import AuditLog
 __all__ = [
     "Base",
     "User",
-    "Complaint",
-    "ComplaintStatus",
-    "ComplaintPriority",
-    "ComplaintSource",
     "Investigation",
     "CAPA",
     "CAPAType",

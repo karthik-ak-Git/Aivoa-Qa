@@ -1,64 +1,20 @@
-import { useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Header } from './components/Header';
 import { ComplaintForm } from './components/ComplaintForm';
 import { CopilotChat } from './components/CopilotChat';
-import { SavedComplaintsModal } from './components/SavedComplaintsModal';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { updateField, setNotification, replaceFormData, clearNotification, clearHighlightedFields } from './store/formSlice';
-import { setSavedComplaints, addComplaint, updateComplaint, deleteComplaint } from './store/complaintsSlice';
-import { setActiveTab } from './store/uiSlice';
 import { INITIAL_EMPTY_FORM } from './sampleData';
 import { ComplaintFormData } from './types';
-import * as api from './services/api';
+import { X } from 'lucide-react';
 
 export default function App() {
   const dispatch = useAppDispatch();
   const formData = useAppSelector((state) => state.form.formData);
   const notification = useAppSelector((state) => state.form.notification);
   const highlightedFields = useAppSelector((state) => state.form.highlightedFields);
-  const savedComplaints = useAppSelector((state) => state.complaints.savedComplaints);
-  const activeTab = useAppSelector((state) => state.ui.activeTab);
-
-  useEffect(() => {
-    api.fetchComplaints()
-      .then((complaints) => {
-        if (complaints.length > 0) {
-          dispatch(setSavedComplaints(complaints));
-        } else {
-          const sampleRecord: ComplaintFormData = {
-            id: 'CMP-2026-0038',
-            status: 'Under QA Investigation',
-            complaintSource: 'Email Intake',
-            customerName: 'Apex Pharmaceuticals Distribution GmbH',
-            productName: 'Amoxicillin Trihydrate 500mg FDF Capsules',
-            productStrength: '500mg Alu-Alu Blister',
-            batchNumber: 'AMX-2026-094',
-            manufacturingDate: '2026-03-10',
-            expiryDate: '2028-03-09',
-            quantityAffected: '240',
-            quantityUnit: 'kg',
-            complaintType: 'Discoloration & Blister Seal Defect',
-            complaintDate: '2026-07-24',
-            detailedDescription: 'Brownish capsule discoloration observed in 15 blister packs. Secondary packaging heat seal compromised allowing humidity ingress.',
-            suggestedSeverity: 'Major',
-            suggestedNextAction: 'Route to QA Investigation & Issue Replacement',
-            riskAssessment: 'Potential moisture ingress or primary packaging seal failure leading to capsule discoloration. Requires immediate retain sample inspection and CAPA review.',
-            createdAt: new Date().toISOString(),
-          };
-          api.createComplaint(sampleRecord).then((created) => {
-            dispatch(setSavedComplaints([created]));
-          }).catch(() => {
-            dispatch(setSavedComplaints([sampleRecord]));
-          });
-        }
-      })
-      .catch(() => {
-        try {
-          const stored = localStorage.getItem('pharma_complaints_v1');
-          if (stored) dispatch(setSavedComplaints(JSON.parse(stored)));
-        } catch { }
-      });
-  }, [dispatch]);
+  const [showSavePopup, setShowSavePopup] = useState(false);
+  const [savedFormData, setSavedFormData] = useState<ComplaintFormData | null>(null);
 
   const showNotification = (message: string, type: 'success' | 'info' | 'error' = 'info') => {
     dispatch(setNotification({ message, type }));
@@ -76,48 +32,44 @@ export default function App() {
     showNotification('Form cleared.', 'info');
   };
 
-  const handleSaveComplaint = async () => {
-    try {
-      const existingId = savedComplaints.find(
-        (c) => c.productName === formData.productName && c.batchNumber === formData.batchNumber && c.id,
-      )?.id;
+  const handleSaveComplaint = useCallback(() => {
+    const snapshot = { ...formData };
+    snapshot.id = snapshot.id || ('PREVIEW-' + Date.now().toString(36));
+    setSavedFormData(snapshot);
+    setShowSavePopup(true);
+    showNotification('Complaint preview ready.', 'success');
+  }, [formData, showNotification]);
 
-      let saved: ComplaintFormData;
-      if (existingId) {
-        saved = await api.updateComplaint(existingId, formData);
-        dispatch(updateComplaint(saved));
-      } else {
-        saved = await api.createComplaint(formData);
-        dispatch(addComplaint(saved));
-      }
-      dispatch(replaceFormData(saved));
-      showNotification(`Complaint ${saved.id} saved to database.`, 'success');
-    } catch (err: any) {
-      console.error('Save failed:', err);
-      showNotification(`Save failed: ${err.message}`, 'error');
-    }
+  const handleClosePopup = () => {
+    setShowSavePopup(false);
+    setSavedFormData(null);
   };
 
-  const handleDeleteComplaint = async (id: string) => {
-    try {
-      await api.deleteComplaint(id);
-      dispatch(deleteComplaint(id));
-      showNotification(`Complaint ${id} removed.`, 'info');
-    } catch (err: any) {
-      console.error('Delete failed:', err);
-      showNotification(`Delete failed: ${err.message}`, 'error');
-    }
+  const fieldLabels: Record<string, string> = {
+    status: 'Status',
+    complaintSource: 'Complaint Source',
+    customerName: 'Customer Name',
+    productName: 'Product Name',
+    productStrength: 'Product Strength',
+    batchNumber: 'Batch Number',
+    manufacturingDate: 'Manufacturing Date',
+    expiryDate: 'Expiry Date',
+    quantityAffected: 'Quantity Affected',
+    quantityUnit: 'Unit',
+    complaintType: 'Complaint Type',
+    complaintDate: 'Complaint Date',
+    detailedDescription: 'Detailed Description',
+    suggestedSeverity: 'Severity',
+    suggestedNextAction: 'Suggested Next Action',
+    riskAssessment: 'Risk Assessment',
   };
 
   return (
     <div className="min-h-screen bg-[#faf8ff] text-slate-900 font-sans flex flex-col">
       <Header
-        savedCount={savedComplaints.length}
         onNewComplaint={() => {
           dispatch(replaceFormData(INITIAL_EMPTY_FORM));
-          dispatch(setActiveTab('form'));
         }}
-        onOpenSavedModal={() => dispatch(setActiveTab('logs'))}
       />
 
       {notification && (
@@ -136,38 +88,68 @@ export default function App() {
         </div>
       )}
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
-        {activeTab === 'logs' ? (
-          <SavedComplaintsModal
-            complaints={savedComplaints}
-            onSelectComplaint={(c) => {
-              dispatch(replaceFormData(c));
-              dispatch(setActiveTab('form'));
-            }}
-            onDeleteComplaint={handleDeleteComplaint}
-            onBackToForm={() => dispatch(setActiveTab('form'))}
-          />
-        ) : (
-          <div className="flex gap-4 lg:gap-6">
-            <div className="flex-1 min-w-0">
-              <div className="h-[calc(100vh-8rem)] overflow-y-auto pr-1 lg:pr-2">
-                <ComplaintForm
-                  formData={formData}
-                  onChange={handleFieldChange}
-                  onReset={handleResetForm}
-                  onSave={handleSaveComplaint}
-                  highlightedFields={highlightedFields}
-                  onClearHighlights={() => dispatch(clearHighlightedFields())}
-                />
+      {/* Save Preview Popup */}
+      {showSavePopup && savedFormData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[85vh] overflow-y-auto mx-4">
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight">Complaint Preview</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Review the complaint data before finalizing</p>
               </div>
+              <button
+                onClick={handleClosePopup}
+                className="p-2 hover:bg-slate-100 text-slate-500 rounded-lg transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="w-80 xl:w-96 shrink-0 hidden lg:block">
-              <div className="h-[calc(100vh-8rem)]">
-                <CopilotChat />
-              </div>
+
+            <div className="px-6 py-4 space-y-4">
+              {Object.entries(fieldLabels).map(([key, label]) => {
+                const value = (savedFormData as any)[key];
+                if (!value || (typeof value === 'string' && !value.trim())) return null;
+                return (
+                  <div key={key} className="border-b border-slate-50 pb-2 last:border-0">
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
+                    <p className="text-sm text-slate-800 mt-0.5 font-medium">{value}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="sticky bottom-0 bg-slate-50 border-t border-slate-100 px-6 py-4 flex justify-end rounded-b-2xl">
+              <button
+                onClick={handleClosePopup}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all shadow-2xs"
+              >
+                Close
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
+
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+        <div className="flex gap-4 lg:gap-6">
+          <div className="flex-1 min-w-0">
+            <div className="h-[calc(100vh-8rem)] overflow-y-auto pr-1 lg:pr-2">
+              <ComplaintForm
+                formData={formData}
+                onChange={handleFieldChange}
+                onReset={handleResetForm}
+                onSave={handleSaveComplaint}
+                highlightedFields={highlightedFields}
+                onClearHighlights={() => dispatch(clearHighlightedFields())}
+              />
+            </div>
+          </div>
+          <div className="w-80 xl:w-96 shrink-0 hidden lg:block">
+            <div className="h-[calc(100vh-8rem)]">
+              <CopilotChat />
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );

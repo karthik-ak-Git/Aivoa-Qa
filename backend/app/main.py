@@ -7,7 +7,6 @@ from app.core.config import get_settings
 from app.core.logger import setup_logging, get_logger
 from app.api.complaint_agents import router as agents_router
 from app.api.health import router as health_router
-from app.api.complaints import router as complaints_router
 
 settings = get_settings()
 logger = setup_logging()
@@ -140,7 +139,6 @@ app.add_middleware(
 
 app.include_router(agents_router)
 app.include_router(health_router)
-app.include_router(complaints_router)
 
 
 @app.exception_handler(Exception)
