@@ -38,10 +38,16 @@ npm-debug.log*
 # Testing
 coverage/
 .nyc_output/
+test_ocr/
+test_*.py
+check_*.py
 
 # Build artifacts
 *.tgz
 *.tar.gz
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
 
 # OS
 .DS_Store

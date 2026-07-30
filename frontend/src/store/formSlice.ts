@@ -52,9 +52,6 @@ const formSlice = createSlice({
     updateField: (state, action: PayloadAction<{ field: keyof ComplaintFormData; value: string }>) => {
       (state.formData as any)[action.payload.field] = action.payload.value;
     },
-    setStatus: (state, action: PayloadAction<'Pending Triage' | 'Under QA Investigation' | 'CAPA Initiated' | 'Closed'>) => {
-      state.formData.status = action.payload;
-    },
     setIsAssessingRisk: (state, action: PayloadAction<boolean>) => {
       state.isAssessingRisk = action.payload;
     },
@@ -77,7 +74,6 @@ export const {
   setFormData,
   replaceFormData,
   updateField,
-  setStatus,
   setIsAssessingRisk,
   setNotification,
   clearNotification,
