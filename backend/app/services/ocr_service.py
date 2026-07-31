@@ -2,6 +2,7 @@
 
 import io
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -11,18 +12,17 @@ logger = get_logger("services.ocr")
 
 SUPPORTED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "tiff", "tif", "bmp", "txt", "md", "csv", "docx"}
 
-try:
-    import pytesseract
+def _find_tesseract() -> Optional[str]:
     for _candidate in [
         r"C:\Program Files\Tesseract-OCR\tesseract.exe",
         r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
         str(Path.home() / "AppData" / "Local" / "Tesseract-OCR" / "tesseract.exe"),
     ]:
         if os.path.isfile(_candidate):
-            pytesseract.pytesseract.tesseract_cmd = _candidate
-            break
-except ImportError:
-    pass
+            return _candidate
+    return None
+
+TESSERACT_PATH = _find_tesseract()
 
 
 def _extract_pdf_fitz(raw_bytes: bytes) -> str:
@@ -45,38 +45,66 @@ def _extract_pdf_pdfminer(raw_bytes: bytes) -> str:
     return text
 
 
-def _extract_image_tesseract(raw_bytes: bytes) -> Optional[str]:
+def _tesseract_ocr(image_path: str) -> Optional[str]:
+    if TESSERACT_PATH is None:
+        logger.warning("Tesseract not found on system — cannot OCR")
+        return None
     try:
-        from PIL import Image
-        import pytesseract
-        image = Image.open(io.BytesIO(raw_bytes))
-        text = pytesseract.image_to_string(image, lang="eng")
-        return text.strip() or None
-    except ImportError:
-        logger.warning("pytesseract or Pillow not installed — cannot OCR images")
+        result = subprocess.run(
+            [TESSERACT_PATH, image_path, "stdout", "-l", "eng", "--psm", "3"],
+            capture_output=True, text=True, timeout=60,
+        )
+        text = result.stdout.strip()
+        return text or None
+    except FileNotFoundError:
+        logger.warning("Tesseract executable not found")
+        return None
+    except subprocess.TimeoutExpired:
+        logger.warning("Tesseract timed out")
         return None
     except Exception as e:
         logger.warning(f"Tesseract OCR failed: {e}")
         return None
 
 
+def _extract_image_tesseract(raw_bytes: bytes) -> Optional[str]:
+    try:
+        from PIL import Image
+        img = Image.open(io.BytesIO(raw_bytes))
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            img.save(tmp, format="PNG")
+            tmp_path = tmp.name
+        text = _tesseract_ocr(tmp_path)
+        os.unlink(tmp_path)
+        return text
+    except ImportError:
+        logger.warning("Pillow not installed — cannot process images")
+        return None
+    except Exception as e:
+        logger.warning(f"Image OCR failed: {e}")
+        return None
+
+
 def _extract_pdf_tesseract(raw_bytes: bytes) -> Optional[str]:
     try:
         import fitz
-        import pytesseract
         from PIL import Image
         doc = fitz.open(stream=io.BytesIO(raw_bytes), filetype="pdf")
         pages = []
         for i, page in enumerate(doc):
             pix = page.get_pixmap(dpi=200)
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            text = pytesseract.image_to_string(img, lang="eng")
-            pages.append(f"--- Page {i + 1} ---\n{text.strip()}")
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                img.save(tmp, format="PNG")
+                tmp_path = tmp.name
+            text = _tesseract_ocr(tmp_path)
+            os.unlink(tmp_path)
+            pages.append(f"--- Page {i + 1} ---\n{text.strip() if text else ''}")
         doc.close()
         result = "\n\n".join(pages)
         return result.strip() or None
     except ImportError:
-        logger.warning("fitz or pytesseract not installed — cannot OCR PDF")
+        logger.warning("fitz not installed — cannot render PDF for OCR")
         return None
     except Exception as e:
         logger.warning(f"PDF Tesseract OCR failed: {e}")

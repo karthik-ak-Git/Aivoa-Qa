@@ -84,18 +84,18 @@ async def extract_from_document(
     """Extract complaint data from an uploaded document (PDF, image, DOCX, TXT) or pasted text."""
     workflow = _get_workflow()
     filename = file.filename if file else "pasted_text.txt"
+    content = ""
 
-    if file and not text:
+    if file:
         raw = await file.read()
-        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-        if ext in ("png", "jpg", "jpeg", "tiff", "tif", "bmp", "pdf", "docx"):
-            result = extract_text_from_bytes(raw, filename)
-            content = result["text"]
-            logger.info(f"File extraction: method={result['method']}, success={result['success']}, chars={len(content)}")
-        else:
-            content = raw.decode("utf-8", errors="replace")
-    else:
-        content = text
+        ocr_result = extract_text_from_bytes(raw, filename)
+        logger.info(f"File extraction: method={ocr_result['method']}, success={ocr_result['success']}, chars={len(ocr_result['text'])}")
+        if not ocr_result["success"]:
+            raise HTTPException(status_code=400, detail=f"Could not extract text from {filename}. The file may be empty, corrupted, or in an unsupported format.")
+        content = ocr_result["text"]
+
+    if text:
+        content = (content + "\n" + text) if content else text
 
     if not content.strip():
         raise HTTPException(status_code=400, detail="No content to extract from.")

@@ -15,6 +15,7 @@ from app.schemas.copilot import (
     DocumentUploadResponse,
 )
 from app.core.logger import get_logger, PerformanceLogger
+from app.services.ocr_service import extract_text_from_bytes
 
 logger = get_logger("api.copilot.sub")
 
@@ -456,7 +457,8 @@ async def upload_document(
     conv_service=Depends(_get_conversation_service),
 ):
     # Validate file type
-    ALLOWED_EXTENSIONS = {"txt", "md", "csv", "pdf", "docx"}
+    from app.services.ocr_service import SUPPORTED_EXTENSIONS
+    ALLOWED_EXTENSIONS = SUPPORTED_EXTENSIONS
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
     if not file.filename:
@@ -473,45 +475,14 @@ async def upload_document(
     if file_size == 0:
         raise HTTPException(status_code=400, detail="Empty file")
 
-    # Extract text (in-process, no subprocess)
-    text = ""
-    if ext in ("txt", "md", "csv"):
-        text = raw_bytes.decode("utf-8", errors="replace")
-    elif ext == "pdf":
-        try:
-            import io
-            import fitz
-            doc = fitz.open(stream=io.BytesIO(raw_bytes), filetype="pdf")
-            text = "\n".join(page.get_text() for page in doc)
-            doc.close()
-        except ImportError:
-            try:
-                from pdfminer.high_level import extract_text as pdfminer_extract
-                import tempfile, os
-                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-                    tmp.write(raw_bytes)
-                    tmp.flush()
-                    text = pdfminer_extract(tmp.name)
-                    os.unlink(tmp.name)
-            except ImportError:
-                text = "[PDF text extraction requires PyMuPDF or pdfminer.six]"
-        except Exception:
-            text = "[PDF content - text extraction failed]"
-    elif ext == "docx":
-        try:
-            import io
-            from docx import Document
-            doc = Document(io.BytesIO(raw_bytes))
-            text = "\n".join(p.text for p in doc.paragraphs)
-        except ImportError:
-            text = "[DOCX content - python-docx not installed]"
-        except Exception:
-            text = "[DOCX content - text extraction failed]"
-    else:
-        text = raw_bytes.decode("utf-8", errors="replace")
-
-    if not text.strip():
-        text = "[No text content could be extracted]"
+    # Extract text via shared OCR service
+    ocr_result = extract_text_from_bytes(raw_bytes, file.filename)
+    if not ocr_result["success"] or not ocr_result["text"].strip():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not extract text from {file.filename}. The file may be empty, corrupted, or in an unsupported format.",
+        )
+    text = ocr_result["text"]
 
     # AI analysis
     ai_summary = None
